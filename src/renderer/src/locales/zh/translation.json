@@ -51,7 +51,23 @@
     "agent": {
       "allowProactiveSpeak": "允许AI主动发言",
       "idleSecondsToSpeak": "空闲多少秒后AI可发言",
-      "allowButtonTrigger": "通过举手按钮提示AI发言"
+      "allowButtonTrigger": "通过举手按钮提示AI发言",
+      "openCode": {
+        "title": "OpenCode",
+        "connected": "已连接",
+        "disconnected": "不可用",
+        "baseUrl": "服务器地址",
+        "providerId": "提供商 ID",
+        "model": "模型",
+        "agent": "代理",
+        "workspace": "工作目录",
+        "timeout": "超时（秒）",
+        "keepSessions": "保留 OpenCode 会话",
+        "allowTools": "允许代理使用工具",
+        "checkConnection": "检查",
+        "apply": "应用",
+        "saving": "正在应用..."
+      }
     },
     "about": {
       "title": "Open LLM VTuber 前端",
@@ -133,4 +149,4 @@
     "connecting": "连接中",
     "clickToReconnect": "点击重新连接"
   }
-} 
+}

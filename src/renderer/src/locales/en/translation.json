@@ -53,7 +53,23 @@
     "agent": {
       "allowProactiveSpeak": "Allow AI to Speak Proactively",
       "idleSecondsToSpeak": "Idle seconds allow AI to speak",
-      "allowButtonTrigger": "Prompt AI to Speak via Raise Hand Button"
+      "allowButtonTrigger": "Prompt AI to Speak via Raise Hand Button",
+      "openCode": {
+        "title": "OpenCode",
+        "connected": "Connected",
+        "disconnected": "Unavailable",
+        "baseUrl": "Server URL",
+        "providerId": "Provider ID",
+        "model": "Model",
+        "agent": "Agent",
+        "workspace": "Workspace",
+        "timeout": "Timeout (seconds)",
+        "keepSessions": "Keep OpenCode sessions",
+        "allowTools": "Allow agent tools",
+        "checkConnection": "Check",
+        "apply": "Apply",
+        "saving": "Applying..."
+      }
     },
     "about": {
       "title": "Open LLM VTuber Frontend",
@@ -136,4 +152,4 @@
     "connecting": "Connecting",
     "clickToReconnect": "Click to Reconnect"
   }
-} 
+}
