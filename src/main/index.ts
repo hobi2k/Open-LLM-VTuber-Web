@@ -1,5 +1,11 @@
 /* eslint-disable no-shadow */
-import { app, ipcMain, globalShortcut, desktopCapturer } from "electron";
+import {
+  app,
+  ipcMain,
+  globalShortcut,
+  desktopCapturer,
+  dialog,
+} from "electron";
 import { electronApp, optimizer } from "@electron-toolkit/utils";
 import { WindowManager } from "./window-manager";
 import { MenuManager } from "./menu-manager";
@@ -24,7 +30,7 @@ function setupIPC(): void {
   });
 
   ipcMain.on("pre-mode-changed", (_event, newMode) => {
-    if (newMode === 'window' || newMode === 'pet') {
+    if (newMode === "window" || newMode === "pet") {
       menuManager.setMode(newMode);
     }
   });
@@ -68,9 +74,17 @@ function setupIPC(): void {
     menuManager.updateConfigFiles(files);
   });
 
-  ipcMain.handle('get-screen-capture', async () => {
-    const sources = await desktopCapturer.getSources({ types: ['screen'] });
+  ipcMain.handle("get-screen-capture", async () => {
+    const sources = await desktopCapturer.getSources({ types: ["screen"] });
     return sources[0].id;
+  });
+
+  ipcMain.handle("select-directory", async () => {
+    const window = windowManager.getWindow();
+    const result = await dialog.showOpenDialog(window, {
+      properties: ["openDirectory", "createDirectory"],
+    });
+    return result.canceled ? null : result.filePaths[0] || null;
   });
 }
 
@@ -123,14 +137,16 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window);
   });
 
-  app.on('web-contents-created', (_, contents) => {
-    contents.session.setPermissionRequestHandler((webContents, permission, callback) => {
-      if (permission === 'media') {
-        callback(true);
-      } else {
-        callback(false);
-      }
-    });
+  app.on("web-contents-created", (_, contents) => {
+    contents.session.setPermissionRequestHandler(
+      (webContents, permission, callback) => {
+        if (permission === "media") {
+          callback(true);
+        } else {
+          callback(false);
+        }
+      },
+    );
   });
 });
 

@@ -21,8 +21,51 @@ interface OpenCodeConnection {
 
 interface CLIConnection {
   available: boolean;
+  path: string | null;
   version: string | null;
   error: string | null;
+}
+
+export type LaunchMode = "direct" | "omlx";
+
+export interface RuntimeModel {
+  id: string;
+  label: string;
+  provider: string;
+}
+
+export interface RuntimeProject {
+  name: string;
+  path: string;
+  source: string;
+}
+
+export interface RuntimeSession {
+  id: string;
+  title: string;
+  workspace: string;
+  updated_at: number | string | null;
+}
+
+interface RuntimeCatalog {
+  executables: Record<string, CLIConnection>;
+  omlx: {
+    available: boolean;
+    path: string | null;
+    version: string | null;
+    base_url: string | null;
+    models: RuntimeModel[];
+    error: string | null;
+  };
+  models: Record<
+    "opencode" | "claude_code" | "codex" | "hermes",
+    RuntimeModel[]
+  >;
+  projects: RuntimeProject[];
+  sessions: Record<
+    "opencode" | "claude_code" | "codex" | "hermes",
+    RuntimeSession[]
+  >;
 }
 
 interface RuntimeConnections {
@@ -37,6 +80,8 @@ export interface OpenCodeRuntimeSettings {
   provider_id: string;
   model: string;
   agent: string;
+  launch_mode: LaunchMode;
+  session_id: string;
   workspace_directory: string;
   timeout: number;
   keep_sessions: boolean;
@@ -47,6 +92,8 @@ export interface OpenCodeRuntimeSettings {
 
 export interface CLIRuntimeSettings {
   executable: string;
+  launch_mode: LaunchMode;
+  session_id: string;
   model: string;
   provider: string;
   workspace_directory: string;
@@ -62,7 +109,27 @@ export interface AgentRuntimeSettings {
   hermes: CLIRuntimeSettings;
 }
 
-const unavailableCLI = { available: false, version: null, error: null };
+const unavailableCLI = {
+  available: false,
+  path: null,
+  version: null,
+  error: null,
+};
+
+const defaultCatalog: RuntimeCatalog = {
+  executables: {},
+  omlx: {
+    available: false,
+    path: null,
+    version: null,
+    base_url: null,
+    models: [],
+    error: null,
+  },
+  models: { opencode: [], claude_code: [], codex: [], hermes: [] },
+  projects: [],
+  sessions: { opencode: [], claude_code: [], codex: [], hermes: [] },
+};
 
 const defaultRuntimeSettings: AgentRuntimeSettings = {
   provider: "opencode_llm",
@@ -71,6 +138,8 @@ const defaultRuntimeSettings: AgentRuntimeSettings = {
     provider_id: "",
     model: "",
     agent: "vtuber",
+    launch_mode: "direct",
+    session_id: "",
     workspace_directory: ".",
     timeout: 300,
     keep_sessions: false,
@@ -80,6 +149,8 @@ const defaultRuntimeSettings: AgentRuntimeSettings = {
   },
   claude_code: {
     executable: "claude",
+    launch_mode: "direct",
+    session_id: "",
     model: "",
     provider: "",
     workspace_directory: ".",
@@ -88,6 +159,8 @@ const defaultRuntimeSettings: AgentRuntimeSettings = {
   },
   codex: {
     executable: "codex",
+    launch_mode: "direct",
+    session_id: "",
     model: "",
     provider: "",
     workspace_directory: ".",
@@ -96,6 +169,8 @@ const defaultRuntimeSettings: AgentRuntimeSettings = {
   },
   hermes: {
     executable: "hermes",
+    launch_mode: "direct",
+    session_id: "",
     model: "",
     provider: "",
     workspace_directory: ".",
@@ -142,6 +217,7 @@ export function useAgentSettings({
   const [originalRuntimeSettings, setOriginalRuntimeSettings] = useState(
     defaultRuntimeSettings,
   );
+  const [runtimeCatalog, setRuntimeCatalog] = useState(defaultCatalog);
   const [runtimeState, setRuntimeState] = useState<
     "loading" | "ready" | "saving" | "error"
   >("loading");
@@ -158,16 +234,38 @@ export function useAgentSettings({
     setRuntimeState("loading");
     setRuntimeError(null);
     try {
-      const response = await fetch(`${baseUrl}/api/agent-runtime/settings`);
-      if (!response.ok) throw new Error(`Runtime settings request failed (${response.status})`);
-      const payload = (await response.json()) as AgentRuntimeSettings;
+      const [settingsResponse, catalogResponse] = await Promise.all([
+        fetch(`${baseUrl}/api/agent-runtime/settings`),
+        fetch(`${baseUrl}/api/agent-runtime/catalog`),
+      ]);
+      if (!settingsResponse.ok) {
+        throw new Error(
+          `Runtime settings request failed (${settingsResponse.status})`,
+        );
+      }
+      if (!catalogResponse.ok) {
+        throw new Error(
+          `Runtime catalog request failed (${catalogResponse.status})`,
+        );
+      }
+      const payload = (await settingsResponse.json()) as AgentRuntimeSettings;
+      const catalog = (await catalogResponse.json()) as RuntimeCatalog;
       setRuntimeSettings(payload);
       setOriginalRuntimeSettings(payload);
+      setRuntimeCatalog(catalog);
       setRuntimeState("ready");
     } catch (error) {
       setRuntimeError(error instanceof Error ? error.message : String(error));
       setRuntimeState("error");
     }
+  }, [baseUrl]);
+
+  const refreshRuntimeCatalog = useCallback(async () => {
+    const response = await fetch(`${baseUrl}/api/agent-runtime/catalog`);
+    if (!response.ok) {
+      throw new Error(`Runtime catalog request failed (${response.status})`);
+    }
+    setRuntimeCatalog((await response.json()) as RuntimeCatalog);
   }, [baseUrl]);
 
   useEffect(() => {
@@ -229,6 +327,62 @@ export function useAgentSettings({
     [],
   );
 
+  const handleWorkspaceChange = useCallback((path: string) => {
+    setRuntimeSettings((previous) => {
+      if (previous.provider === "opencode_llm") {
+        return {
+          ...previous,
+          opencode: {
+            ...previous.opencode,
+            workspace_directory: path,
+            session_id: "",
+          },
+        };
+      }
+      const runtime = (() => {
+        if (previous.provider === "claude_code_llm") return "claude_code";
+        if (previous.provider === "codex_cli_llm") return "codex";
+        return "hermes";
+      })();
+      return {
+        ...previous,
+        [runtime]: {
+          ...previous[runtime],
+          workspace_directory: path,
+          session_id: "",
+        },
+      };
+    });
+  }, []);
+
+  const addRuntimeProject = useCallback(
+    (path: string) => {
+      const value = path.trim();
+      if (!value) return;
+      const name = value.split(/[\\/]/).filter(Boolean).pop() || value;
+      setRuntimeCatalog((previous) => ({
+        ...previous,
+        projects: [
+          { name, path: value, source: "Added" },
+          ...previous.projects.filter((project) => project.path !== value),
+        ],
+      }));
+      handleWorkspaceChange(value);
+    },
+    [handleWorkspaceChange],
+  );
+
+  const selectRuntimeProject = useCallback(async () => {
+    const electronWindow = window as typeof window & {
+      api?: { selectDirectory?: () => Promise<string | null> };
+    };
+    if (!electronWindow.api?.selectDirectory) return false;
+    const path = await electronWindow.api.selectDirectory();
+    if (!path) return true;
+    addRuntimeProject(path);
+    return true;
+  }, [addRuntimeProject]);
+
   const saveRuntimeSettings = useCallback(async () => {
     setRuntimeState("saving");
     setRuntimeError(null);
@@ -242,12 +396,13 @@ export function useAgentSettings({
       const payload = (await response.json()) as AgentRuntimeSettings;
       setRuntimeSettings(payload);
       setOriginalRuntimeSettings(payload);
+      await refreshRuntimeCatalog();
       setRuntimeState("ready");
     } catch (error) {
       setRuntimeError(error instanceof Error ? error.message : String(error));
       setRuntimeState("error");
     }
-  }, [baseUrl, runtimeSettings]);
+  }, [baseUrl, runtimeSettings, refreshRuntimeCatalog]);
 
   const checkRuntimeConnections = useCallback(async () => {
     setRuntimeState("loading");
@@ -270,12 +425,13 @@ export function useAgentSettings({
         codex: { ...previous.codex, connection: connections.codex },
         hermes: { ...previous.hermes, connection: connections.hermes },
       }));
+      await refreshRuntimeCatalog();
       setRuntimeState("ready");
     } catch (error) {
       setRuntimeError(error instanceof Error ? error.message : String(error));
       setRuntimeState("error");
     }
-  }, [baseUrl, runtimeSettings]);
+  }, [baseUrl, runtimeSettings, refreshRuntimeCatalog]);
 
   const handleSave = useCallback(() => {
     updateSettings(tempSettings);
@@ -305,12 +461,17 @@ export function useAgentSettings({
     handleIdleSecondsChange,
     handleAllowButtonTriggerChange,
     runtimeSettings,
+    runtimeCatalog,
     runtimeState,
     runtimeError,
     handleRuntimeProviderChange,
     handleOpenCodeSettingChange,
     handleCLISettingChange,
+    handleWorkspaceChange,
+    addRuntimeProject,
+    selectRuntimeProject,
     loadRuntimeSettings,
+    refreshRuntimeCatalog,
     checkRuntimeConnections,
     saveRuntimeSettings,
   };
