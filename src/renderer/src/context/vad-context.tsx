@@ -278,10 +278,10 @@ export function VADProvider({ children }: { children: React.ReactNode }) {
   const initVAD = async () => {
     const newVAD = await MicVAD.new({
       model: "v5",
-      preSpeechPadFrames: 20,
+      preSpeechPadMs: 20 * 32,
       positiveSpeechThreshold: settings.positiveSpeechThreshold / 100,
       negativeSpeechThreshold: settings.negativeSpeechThreshold / 100,
-      redemptionFrames: settings.redemptionFrames,
+      redemptionMs: settings.redemptionFrames * 32,
       baseAssetPath: './libs/',
       onnxWASMBasePath: './libs/',
       onSpeechStart: handleSpeechStart,

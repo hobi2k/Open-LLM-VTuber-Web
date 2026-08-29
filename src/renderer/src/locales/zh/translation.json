@@ -52,19 +52,23 @@
       "allowProactiveSpeak": "允许AI主动发言",
       "idleSecondsToSpeak": "空闲多少秒后AI可发言",
       "allowButtonTrigger": "通过举手按钮提示AI发言",
-      "openCode": {
-        "title": "OpenCode",
-        "connected": "已连接",
-        "disconnected": "不可用",
+      "runtime": {
+        "title": "代理运行时",
+        "available": "可用",
+        "unavailable": "不可用",
         "baseUrl": "服务器地址",
         "providerId": "提供商 ID",
         "model": "模型",
+        "modelOptional": "模型（可选）",
+        "providerOptional": "提供商（可选）",
+        "executable": "可执行文件",
         "agent": "代理",
         "workspace": "工作目录",
         "timeout": "超时（秒）",
         "keepSessions": "保留 OpenCode 会话",
         "allowTools": "允许代理使用工具",
-        "checkConnection": "检查",
+        "useDefault": "使用 CLI 默认值",
+        "check": "检查",
         "apply": "应用",
         "saving": "正在应用..."
       }

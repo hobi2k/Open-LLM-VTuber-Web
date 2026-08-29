@@ -19,6 +19,7 @@ function setupIPC(): void {
   });
 
   ipcMain.on("get-current-mode", (event) => {
+    // eslint-disable-next-line no-param-reassign -- Electron sync IPC replies use returnValue.
     event.returnValue = windowManager.getCurrentMode();
   });
 
@@ -74,7 +75,7 @@ function setupIPC(): void {
 }
 
 app.whenReady().then(() => {
-  electronApp.setAppUserModelId("com.electron");
+  electronApp.setAppUserModelId("io.github.hobi2k.open-llm-vtuber");
 
   windowManager = new WindowManager();
   menuManager = new MenuManager((mode) => windowManager.setWindowMode(mode));

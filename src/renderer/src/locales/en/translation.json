@@ -54,19 +54,23 @@
       "allowProactiveSpeak": "Allow AI to Speak Proactively",
       "idleSecondsToSpeak": "Idle seconds allow AI to speak",
       "allowButtonTrigger": "Prompt AI to Speak via Raise Hand Button",
-      "openCode": {
-        "title": "OpenCode",
-        "connected": "Connected",
-        "disconnected": "Unavailable",
+      "runtime": {
+        "title": "Agent runtime",
+        "available": "Available",
+        "unavailable": "Unavailable",
         "baseUrl": "Server URL",
         "providerId": "Provider ID",
         "model": "Model",
+        "modelOptional": "Model (optional)",
+        "providerOptional": "Provider (optional)",
+        "executable": "Executable",
         "agent": "Agent",
         "workspace": "Workspace",
         "timeout": "Timeout (seconds)",
         "keepSessions": "Keep OpenCode sessions",
         "allowTools": "Allow agent tools",
-        "checkConnection": "Check",
+        "useDefault": "Use CLI default",
+        "check": "Check",
         "apply": "Apply",
         "saving": "Applying..."
       }

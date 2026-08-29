@@ -68,9 +68,9 @@ export class WindowManager {
       ...(isMac ? { titleBarStyle: 'hiddenInset' } : {}),
       webPreferences: {
         preload: join(__dirname, '../preload/index.js'),
-        sandbox: false,
+        sandbox: true,
         contextIsolation: true,
-        nodeIntegration: true,
+        nodeIntegration: false,
       },
       hasShadow: false,
       paintWhenInitiallyHidden: true,
@@ -239,7 +239,7 @@ export class WindowManager {
 
     this.window.webContents.send('mode-changed', 'pet');
   }
-  
+
   getWindow(): BrowserWindow | null {
     return this.window;
   }
