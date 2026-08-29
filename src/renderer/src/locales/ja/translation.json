@@ -1,0 +1,184 @@
+{
+  "common": {
+    "save": "保存",
+    "cancel": "キャンセル",
+    "settings": "設定",
+    "close": "閉じる",
+    "accept": "許可"
+  },
+  "settings": {
+    "tabs": {
+      "general": "一般",
+      "live2d": "Live2D",
+      "asr": "音声認識",
+      "tts": "音声合成",
+      "agent": "AI",
+      "about": "情報"
+    },
+    "general": {
+      "language": "言語",
+      "useCameraBackground": "カメラ背景を使用",
+      "showSubtitle": "字幕を表示",
+      "backgroundImage": "背景画像",
+      "customBgUrlPlaceholder": "画像URLを入力",
+      "customBgUrl": "カスタム背景URL",
+      "characterPreset": "キャラクタープリセット",
+      "wsUrl": "WebSocket URL",
+      "wsUrlPlaceholder": "WebSocket URLを入力",
+      "baseUrl": "ベースURL",
+      "baseUrlPlaceholder": "ベースURLを入力",
+      "imageCompressionQuality": "画像圧縮品質",
+      "imageCompressionQualityPlaceholder": "圧縮品質を入力（0～100）",
+      "imageCompressionQualityHelp": "AIモデルへの送信サイズを抑えるJPEG圧縮品質です。0.1～1.0の範囲で、初期値は0.8です。",
+      "imageMaxWidth": "画像の最大幅",
+      "imageMaxWidthPlaceholder": "最大幅をピクセルで入力",
+      "imageMaxWidthHelp": "この幅を超える画像を縦横比を維持したまま縮小します。0にすると制限しません。"
+    },
+    "live2d": {
+      "pointerInteractive": "ポインター操作",
+      "scrollToResize": "スクロールでサイズ変更"
+    },
+    "asr": {
+      "autoStopMic": "AIの発話開始時にマイクを停止",
+      "autoStopMicDesc": "音声の回り込みを防ぐため、AIが話し始めるとマイクを自動停止します",
+      "autoStartMicOnConvEnd": "会話終了時にマイクを再開",
+      "autoStartMicOnConvEndDesc": "AIの発話終了後にマイクを自動で再開します",
+      "autoStartMicOn": "AIを中断したときにマイクを再開",
+      "autoStartMicOnDesc": "AIを中断したときにマイクを自動で再開します",
+      "positiveSpeechThreshold": "発話検出しきい値",
+      "positiveSpeechThresholdDesc": "発話と判定する最低信頼度です。高いほど誤検出が減ります",
+      "negativeSpeechThreshold": "発話終了しきい値",
+      "negativeSpeechThresholdDesc": "発話検出を終了する信頼度です。低いほど検出感度が下がります",
+      "redemptionFrames": "確定フレーム数",
+      "redemptionFramesDesc": "発話検出を確定する連続フレーム数です。高いほどノイズによる誤作動が減ります"
+    },
+    "agent": {
+      "allowProactiveSpeak": "AIの自発的な発話を許可",
+      "idleSecondsToSpeak": "AIが発話できるまでの待機秒数",
+      "allowButtonTrigger": "挙手機能でAIに発話を促す",
+      "runtime": {
+        "title": "AIバックエンド",
+        "available": "利用可能",
+        "unavailable": "利用不可",
+        "baseUrl": "サーバーURL",
+        "providerId": "プロバイダーID",
+        "provider": "プロバイダー",
+        "model": "モデル",
+        "modelOptional": "モデル（任意）",
+        "providerOptional": "プロバイダー（任意）",
+        "executable": "実行ファイル",
+        "executableHelp": "自動検出を使用するか、実行ファイルの絶対パスまたはコマンド名を入力します。",
+        "agent": "エージェント",
+        "workspace": "ワークスペース",
+        "timeout": "タイムアウト（秒）",
+        "keepSessions": "OpenCodeセッションを保持",
+        "allowTools": "コーディングツールを許可",
+        "useDefault": "CLIの既定値を使用",
+        "autoDetect": "自動検出",
+        "detected": "検出済み",
+        "manual": "手動入力",
+        "directMode": "直接CLI",
+        "selectModel": "モデルを選択または入力",
+        "selectProvider": "プロバイダーを選択または入力",
+        "selectExecutable": "自動検出またはパスを入力",
+        "project": "プロジェクト",
+        "selectProject": "プロジェクトを選択",
+        "addProject": "プロジェクトを追加",
+        "projectPath": "プロジェクトフォルダーの絶対パス",
+        "conversation": "会話",
+        "selectConversation": "会話を選択またはセッションIDを入力",
+        "newConversation": "新しい会話",
+        "currentConversation": "現在の会話",
+        "advanced": "詳細設定",
+        "profile": "OpenCodeプロファイル",
+        "profileHelp": "OpenCodeプロファイルはシステムプロンプト、権限、ツールポリシーを選択します。音声チャットにはVTuberプロファイルを推奨します。",
+        "noMatches": "候補がありません。この値をそのまま使用できます。",
+        "refresh": "再検出",
+        "add": "追加",
+        "check": "確認",
+        "apply": "適用",
+        "saving": "適用中..."
+      }
+    },
+    "about": {
+      "title": "Open LLM VTuber フロントエンド",
+      "version": "バージョン",
+      "projectLinks": "プロジェクトリンク",
+      "github": "GitHub",
+      "documentation": "ドキュメント",
+      "license": "ライセンス",
+      "copyright": "著作権",
+      "viewLicense": "ライセンスを表示"
+    }
+  },
+  "footer": {
+    "typeYourMessage": "メッセージを入力...",
+    "cameraControl": "クリックしてカメラを開始",
+    "cameraStopping": "クリックしてカメラを停止",
+    "screenControl": "クリックして画面共有を開始",
+    "screenStopping": "クリックして画面共有を停止"
+  },
+  "sidebar": {
+    "camera": "カメラ",
+    "screen": "画面",
+    "browser": "ブラウザー",
+    "live": "ライブ",
+    "noMessages": "まだメッセージがありません。会話を始めましょう。",
+    "noBrowserSession": "有効なブラウザーセッションがありません",
+    "browserSession": "ブラウザーセッション"
+  },
+  "group": {
+    "management": "グループ管理",
+    "yourUuid": "あなたのUUID",
+    "inviteMember": "メンバーを招待",
+    "enterMemberUuid": "メンバーのUUIDを入力",
+    "invite": "招待",
+    "members": "メンバー",
+    "you": "あなた",
+    "leaveGroup": "グループを退出",
+    "removeMember": "メンバーを削除",
+    "leave": "退出"
+  },
+  "history": {
+    "chatHistoryList": "チャット履歴",
+    "noMessages": "メッセージがありません"
+  },
+  "notification": {
+    "characterLoaded": "新しいキャラクターを読み込みました",
+    "characterSwitched": "キャラクターを切り替えました",
+    "historyLoaded": "履歴を読み込みました",
+    "newConversation": "新しい会話を開始しました",
+    "newChatHistory": "新しいチャット履歴を作成しました",
+    "historyDeleteSuccess": "履歴を削除しました",
+    "historyDeleteFail": "履歴を削除できませんでした"
+  },
+  "error": {
+    "cameraApiNotSupported": "このデバイスはカメラAPIに対応していません",
+    "noCameraFound": "カメラが見つかりません",
+    "failedStartCamera": "カメラを開始できませんでした",
+    "failedStartBackgroundCamera": "背景カメラを開始できませんでした",
+    "failedStartScreenCapture": "画面共有を開始できませんでした",
+    "failedStartVAD": "音声検出を開始できませんでした",
+    "llmCantHear": "LLMが音声を認識できません。",
+    "audioPlayback": "音声再生エラー",
+    "enterValidUuid": "有効なUUIDを入力してください",
+    "cannotDeleteCurrentHistory": "現在のチャット履歴は削除できません",
+    "failedCapture": "{{source}}のフレームを取得できませんでした",
+    "failedParseWebSocket": "WebSocketメッセージを解析できませんでした",
+    "websocketNotOpen": "WebSocketが接続されていません。",
+    "vadMisfire": "音声が短すぎます。大きな声で長めに話すか、音声検出設定を調整してください。"
+  },
+  "aiState": {
+    "idle": "待機中",
+    "thinking-speaking": "思考・発話中",
+    "interrupted": "中断",
+    "loading": "読み込み中",
+    "listening": "聞き取り中",
+    "waiting": "待機中"
+  },
+  "wsStatus": {
+    "connected": "接続済み",
+    "connecting": "接続中",
+    "clickToReconnect": "クリックして再接続"
+  }
+}

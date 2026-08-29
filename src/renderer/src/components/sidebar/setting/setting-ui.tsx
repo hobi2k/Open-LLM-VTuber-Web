@@ -107,7 +107,7 @@ function SettingUI({ open, onClose }: SettingUIProps): JSX.Element {
           </div>
         </DrawerHeader>
 
-        <DrawerBody>
+        <DrawerBody {...settingStyles.settingUI.drawerBody}>
           <Tabs.Root
             defaultValue="general"
             value={activeTab}
@@ -157,11 +157,11 @@ function SettingUI({ open, onClose }: SettingUIProps): JSX.Element {
           </Tabs.Root>
         </DrawerBody>
 
-        <DrawerFooter>
-          <Button colorPalette="red" onClick={handleCancel}>
+        <DrawerFooter {...settingStyles.settingUI.drawerFooter}>
+          <Button variant="ghost" borderRadius="5px" onClick={handleCancel}>
             {t("common.cancel")}
           </Button>
-          <Button colorPalette="blue" onClick={handleSave}>
+          <Button colorPalette="blue" borderRadius="5px" onClick={handleSave}>
             {t("common.save")}
           </Button>
         </DrawerFooter>

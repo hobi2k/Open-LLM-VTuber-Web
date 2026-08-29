@@ -5,6 +5,7 @@ import LanguageDetector from "i18next-browser-languagedetector";
 
 // Import translation resources
 import enTranslation from "./locales/en/translation.json";
+import jaTranslation from "./locales/ja/translation.json";
 import zhTranslation from "./locales/zh/translation.json";
 
 // Configure i18next instance
@@ -17,6 +18,8 @@ i18n
   .init({
     // Default language when detection fails
     fallbackLng: "en",
+    supportedLngs: ["en", "ja", "zh"],
+    load: "languageOnly",
     // Debug mode for development
     debug: process.env.NODE_ENV === "development",
     // Namespaces configuration
@@ -26,6 +29,9 @@ i18n
     resources: {
       en: {
         translation: enTranslation,
+      },
+      ja: {
+        translation: jaTranslation,
       },
       zh: {
         translation: zhTranslation,

@@ -16,6 +16,10 @@ export type RuntimeProvider =
 interface OpenCodeConnection {
   connected: boolean;
   version: string | null;
+  path: string | null;
+  executable_available: boolean;
+  executable_version: string | null;
+  executable_error: string | null;
   error: string | null;
 }
 
@@ -76,6 +80,7 @@ interface RuntimeConnections {
 }
 
 export interface OpenCodeRuntimeSettings {
+  executable: string;
   base_url: string;
   provider_id: string;
   model: string;
@@ -134,6 +139,7 @@ const defaultCatalog: RuntimeCatalog = {
 const defaultRuntimeSettings: AgentRuntimeSettings = {
   provider: "opencode_llm",
   opencode: {
+    executable: "auto",
     base_url: "http://127.0.0.1:4096",
     provider_id: "",
     model: "",
@@ -145,7 +151,15 @@ const defaultRuntimeSettings: AgentRuntimeSettings = {
     keep_sessions: false,
     allow_tools: false,
     has_server_password: false,
-    connection: { connected: false, version: null, error: null },
+    connection: {
+      connected: false,
+      version: null,
+      path: null,
+      executable_available: false,
+      executable_version: null,
+      executable_error: null,
+      error: null,
+    },
   },
   claude_code: {
     executable: "claude",

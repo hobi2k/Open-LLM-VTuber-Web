@@ -21,6 +21,7 @@ const useCollections = () => {
   const languages = createListCollection({
     items: [
       { label: "English", value: "en" },
+      { label: "日本語", value: "ja" },
       { label: "中文", value: "zh" },
     ],
   });
@@ -130,14 +131,14 @@ function General({ onSave, onCancel }: GeneralProps): JSX.Element {
         label={t("settings.general.wsUrl")}
         value={settings.wsUrl}
         onChange={(value) => handleSettingChange("wsUrl", value)}
-        placeholder="Enter WebSocket URL"
+        placeholder={t("settings.general.wsUrlPlaceholder")}
       />
 
       <InputField
         label={t("settings.general.baseUrl")}
         value={settings.baseUrl}
         onChange={(value) => handleSettingChange("baseUrl", value)}
-        placeholder="Enter Base URL"
+        placeholder={t("settings.general.baseUrlPlaceholder")}
       />
 
       <InputField

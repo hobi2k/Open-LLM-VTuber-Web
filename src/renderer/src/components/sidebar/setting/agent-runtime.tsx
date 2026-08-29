@@ -10,10 +10,14 @@ import {
   Separator,
   Stack,
   Text,
-  createListCollection,
 } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
-import { HiArrowPath, HiChevronDown, HiFolderPlus } from "react-icons/hi2";
+import {
+  HiArrowPath,
+  HiChevronDown,
+  HiCommandLine,
+  HiFolderPlus,
+} from "react-icons/hi2";
 import {
   DialogBody,
   DialogCloseTrigger,
@@ -29,7 +33,11 @@ import {
   RuntimeSession,
   useAgentSettings,
 } from "@/hooks/sidebar/setting/use-agent-settings";
-import { InputField, NumberField, SelectField, SwitchField } from "./common";
+import { InputField, NumberField, SwitchField } from "./common";
+import {
+  EditableChoice,
+  EditableChoiceField,
+} from "./editable-choice-field";
 import { settingStyles } from "./setting-styles";
 
 interface AgentProps {
@@ -82,6 +90,9 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
   const available =
     "connected" in connection ? connection.connected : connection.available;
   const launchMode = selectedRuntime.launch_mode;
+  const selectedProvider = isOpenCode
+    ? runtimeSettings.opencode.provider_id
+    : runtimeSettings[runtimeKey].provider;
   const modelOptions = useMemo(() => {
     const catalogModels = runtimeCatalog.models[runtimeKey];
     const filtered =
@@ -115,32 +126,28 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
     selectedRuntime.model,
     t,
   ]);
-  const modelCollection = useMemo(
-    () => createListCollection({
-      items: modelOptions.map((model) => {
-        if (launchMode === "omlx") {
-          return {
-            label: `${model.label} · oMLX`,
-            value: `${model.provider}::${model.id}`,
-          };
-        }
-        const showProvider =
-          runtimeKey !== "claude_code" &&
-          runtimeKey !== "codex" &&
-          model.provider;
-        return {
-          label: showProvider ? `${model.label} · ${model.provider}` : model.label,
-          value: `${model.provider}::${model.id}`,
-        };
-      }),
-    }),
-    [launchMode, modelOptions, runtimeKey],
+  const modelChoices = useMemo<EditableChoice[]>(
+    () => modelOptions.map((model) => ({
+      key: `${model.provider}::${model.id}`,
+      value: model.id,
+      label: model.label,
+      meta: model.provider || t("settings.agent.runtime.useDefault"),
+    })),
+    [modelOptions, t],
   );
-  const selectedModel = `${
-    isOpenCode
-      ? runtimeSettings.opencode.provider_id
-      : runtimeSettings[runtimeKey].provider
-  }::${selectedRuntime.model}`;
+  const providerChoices = useMemo<EditableChoice[]>(() => {
+    const providers = new Map(
+      modelOptions
+        .filter((model) => model.provider)
+        .map((model) => [model.provider, model.provider]),
+    );
+    if (selectedProvider) providers.set(selectedProvider, selectedProvider);
+    return [...providers.values()].map((provider) => ({
+      key: provider,
+      value: provider,
+      label: provider,
+    }));
+  }, [modelOptions, selectedProvider]);
 
   const projectOptions = useMemo(() => {
     const values = new Map(
@@ -159,13 +166,13 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
     );
     return [...values.values()];
   }, [runtimeCatalog.projects, selectedRuntime.workspace_directory]);
-  const projectCollection = useMemo(
-    () => createListCollection({
-      items: projectOptions.map((project) => ({
-        label: `${project.name} · ${project.source}`,
-        value: project.path,
-      })),
-    }),
+  const projectChoices = useMemo<EditableChoice[]>(
+    () => projectOptions.map((project) => ({
+      key: project.path,
+      value: project.path,
+      label: project.name,
+      meta: project.source,
+    })),
     [projectOptions],
   );
 
@@ -191,21 +198,45 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
     selectedRuntime.workspace_directory,
     t,
   ]);
-  const sessionCollection = useMemo(
-    () => createListCollection({
-      items: [
-        {
-          label: t("settings.agent.runtime.newConversation"),
-          value: "__new__",
-        },
-        ...sessionOptions.map((session) => ({
-          label: `${session.title} · ${session.workspace.split(/[\\/]/).filter(Boolean).pop() || "Local"}`,
-          value: session.id,
-        })),
-      ],
-    }),
+  const sessionChoices = useMemo<EditableChoice[]>(
+    () => [
+      {
+        key: "__new__",
+        label: t("settings.agent.runtime.newConversation"),
+        value: "",
+      },
+      ...sessionOptions.map((session) => ({
+        key: session.id,
+        label: session.title,
+        value: session.id,
+        meta: session.workspace.split(/[\\/]/).filter(Boolean).pop() || "Local",
+      })),
+    ],
     [sessionOptions, t],
   );
+  const selectedSession = sessionOptions.find(
+    (session) => session.id === selectedRuntime.session_id,
+  );
+  const detectedExecutable = runtimeCatalog.executables[runtimeKey];
+  const executableChoices = useMemo<EditableChoice[]>(() => {
+    const choices: EditableChoice[] = [
+      {
+        key: "auto",
+        value: "auto",
+        label: t("settings.agent.runtime.autoDetect"),
+        meta: detectedExecutable?.path || undefined,
+      },
+    ];
+    if (detectedExecutable?.path) {
+      choices.push({
+        key: detectedExecutable.path,
+        value: detectedExecutable.path,
+        label: detectedExecutable.path,
+        meta: detectedExecutable.version || t("settings.agent.runtime.detected"),
+      });
+    }
+    return choices;
+  }, [detectedExecutable, t]);
 
   const changeModel = (value: string): void => {
     const model = modelOptions.find(
@@ -219,6 +250,30 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
     }
     handleCLISettingChange(runtimeKey, "provider", model.provider);
     handleCLISettingChange(runtimeKey, "model", model.id);
+  };
+
+  const inputModel = (value: string): void => {
+    if (isOpenCode) {
+      handleOpenCodeSettingChange("model", value);
+      return;
+    }
+    handleCLISettingChange(runtimeKey, "model", value);
+  };
+
+  const inputProvider = (value: string): void => {
+    if (isOpenCode) {
+      handleOpenCodeSettingChange("provider_id", value);
+      return;
+    }
+    handleCLISettingChange(runtimeKey, "provider", value);
+  };
+
+  const inputExecutable = (value: string): void => {
+    if (isOpenCode) {
+      handleOpenCodeSettingChange("executable", value);
+      return;
+    }
+    handleCLISettingChange(runtimeKey, "executable", value);
   };
 
   const changeLaunchMode = (value: string): void => {
@@ -263,11 +318,13 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
   };
 
   const executablePath = "path" in connection ? connection.path : null;
+  const executableError =
+    "executable_error" in connection ? connection.executable_error : null;
   const modeUnavailable =
     launchMode === "omlx" && !runtimeCatalog.omlx.base_url;
 
   return (
-    <Stack {...settingStyles.common.container} gap="4">
+    <Stack {...settingStyles.common.container} gap="5">
       <SwitchField
         label={t("settings.agent.allowProactiveSpeak")}
         checked={settings.allowProactiveSpeak}
@@ -290,87 +347,145 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
       />
       <Separator borderColor="whiteAlpha.200" />
 
-      <Flex align="center" justify="space-between" gap="3">
-        <Box minW="0">
-          <Text fontSize="md" fontWeight="semibold">
-            {t("settings.agent.runtime.title")}
-          </Text>
-          <Text color="whiteAlpha.600" fontSize="xs" truncate>
-            {executablePath ||
-              selectedRuntime.connection.version ||
-              runtimeSettings.opencode.base_url}
-          </Text>
-        </Box>
-        <Badge colorPalette={available && !modeUnavailable ? "green" : "red"}>
+      <Flex
+        align="center"
+        justify="space-between"
+        gap="3"
+        borderLeftWidth="2px"
+        borderLeftColor={available && !modeUnavailable ? "green.400" : "red.400"}
+        pl="3"
+        py="1"
+      >
+        <Flex align="center" gap="3" minW="0">
+          <Flex
+            align="center"
+            justify="center"
+            width="8"
+            height="8"
+            color="blue.200"
+            bg="whiteAlpha.100"
+            borderRadius="4px"
+            flexShrink="0"
+          >
+            <HiCommandLine />
+          </Flex>
+          <Box minW="0">
+            <Text fontSize="sm" fontWeight="semibold">
+              {t("settings.agent.runtime.title")}
+            </Text>
+            <Text color="whiteAlpha.600" fontSize="2xs" truncate>
+              {executablePath ||
+                selectedRuntime.connection.version ||
+                runtimeSettings.opencode.base_url}
+            </Text>
+          </Box>
+        </Flex>
+        <Badge
+          colorPalette={available && !modeUnavailable ? "green" : "red"}
+          variant="subtle"
+          borderRadius="4px"
+          px="2"
+        >
           {available && !modeUnavailable
             ? t("settings.agent.runtime.available")
             : t("settings.agent.runtime.unavailable")}
         </Badge>
       </Flex>
 
-      <SegmentGroup.Root
-        value={runtimeSettings.provider}
-        onValueChange={(details) => handleRuntimeProviderChange(details.value as RuntimeProvider)}
-        size="sm"
-        width="full"
-      >
-        <SegmentGroup.Indicator />
-        <SegmentGroup.Items
-          items={runtimes}
-          fontSize="xs"
-          flex="1"
-          justifyContent="center"
-        />
-      </SegmentGroup.Root>
-
-      {(isOpenCode || isHermes) && (
+      <Stack gap="3">
         <SegmentGroup.Root
-          value={launchMode}
-          onValueChange={(details) => {
-            if (details.value) changeLaunchMode(details.value);
-          }}
+          value={runtimeSettings.provider}
+          onValueChange={(details) => handleRuntimeProviderChange(details.value as RuntimeProvider)}
           size="sm"
           width="full"
+          bg="whiteAlpha.100"
+          borderRadius="6px"
+          p="1"
         >
-          <SegmentGroup.Indicator />
+          <SegmentGroup.Indicator borderRadius="4px" bg="whiteAlpha.200" />
           <SegmentGroup.Items
-            items={[
-              {
-                label: t("settings.agent.runtime.directMode"),
-                value: "direct",
-              },
-              { label: "oMLX", value: "omlx" },
-            ]}
+            items={runtimes}
+            fontSize="xs"
+            color="whiteAlpha.800"
             flex="1"
             justifyContent="center"
           />
         </SegmentGroup.Root>
-      )}
+
+        {(isOpenCode || isHermes) && (
+          <SegmentGroup.Root
+            value={launchMode}
+            onValueChange={(details) => {
+              if (details.value) changeLaunchMode(details.value);
+            }}
+            size="sm"
+            width="full"
+            bg="whiteAlpha.50"
+            borderRadius="6px"
+            p="1"
+          >
+            <SegmentGroup.Indicator borderRadius="4px" bg="whiteAlpha.200" />
+            <SegmentGroup.Items
+              items={[
+                {
+                  label: t("settings.agent.runtime.directMode"),
+                  value: "direct",
+                },
+                { label: "oMLX", value: "omlx" },
+              ]}
+              color="whiteAlpha.800"
+              flex="1"
+              justifyContent="center"
+            />
+          </SegmentGroup.Root>
+        )}
+      </Stack>
 
       {(runtimeError ||
         connection.error ||
+        executableError ||
         (modeUnavailable && runtimeCatalog.omlx.error)) && (
         <Text color="red.300" fontSize="xs" overflowWrap="anywhere">
-          {runtimeError || connection.error || runtimeCatalog.omlx.error}
+          {runtimeError ||
+            connection.error ||
+            executableError ||
+            runtimeCatalog.omlx.error}
         </Text>
       )}
 
-      <SelectField
+      {(isOpenCode || isHermes) && (
+        <EditableChoiceField
+          label={t("settings.agent.runtime.provider")}
+          value={selectedProvider}
+          onInput={inputProvider}
+          choices={providerChoices}
+          placeholder={t("settings.agent.runtime.selectProvider")}
+          emptyText={t("settings.agent.runtime.noMatches")}
+          disabled={launchMode === "omlx"}
+          help={launchMode === "omlx" ? "oMLX" : undefined}
+        />
+      )}
+
+      <EditableChoiceField
         label={t("settings.agent.runtime.model")}
-        value={[selectedModel]}
-        onChange={(value) => changeModel(value[0])}
-        collection={modelCollection}
+        value={selectedRuntime.model}
+        onInput={inputModel}
+        onSelect={(choice) => changeModel(choice.key)}
+        choices={modelChoices}
         placeholder={t("settings.agent.runtime.selectModel")}
+        emptyText={t("settings.agent.runtime.noMatches")}
+        help={selectedProvider || undefined}
       />
 
       <Flex align="end" gap="2">
         <Box flex="1" minW="0">
-          <SelectField
+          <EditableChoiceField
             label={t("settings.agent.runtime.project")}
-            value={[selectedRuntime.workspace_directory]}
-            onChange={(value) => handleWorkspaceChange(value[0])}
-            collection={projectCollection}
+            value={selectedRuntime.workspace_directory}
+            onInput={handleWorkspaceChange}
+            choices={projectChoices}
             placeholder={t("settings.agent.runtime.selectProject")}
+            emptyText={t("settings.agent.runtime.noMatches")}
           />
         </Box>
         <Button
@@ -386,12 +501,14 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
         </Button>
       </Flex>
 
-      <SelectField
+      <EditableChoiceField
         label={t("settings.agent.runtime.conversation")}
-        value={[selectedRuntime.session_id || "__new__"]}
-        onChange={(value) => changeSession(value[0])}
-        collection={sessionCollection}
-        placeholder={t("settings.agent.runtime.newConversation")}
+        value={selectedRuntime.session_id}
+        onInput={changeSession}
+        choices={sessionChoices}
+        placeholder={t("settings.agent.runtime.selectConversation")}
+        emptyText={t("settings.agent.runtime.noMatches")}
+        help={selectedSession?.title}
       />
 
       <Box
@@ -413,6 +530,17 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
           <HiChevronDown />
         </Flex>
         <Stack gap="3" pt="3">
+          <EditableChoiceField
+            label={t("settings.agent.runtime.executable")}
+            value={selectedRuntime.executable}
+            onInput={inputExecutable}
+            choices={executableChoices}
+            placeholder={t("settings.agent.runtime.selectExecutable")}
+            emptyText={t("settings.agent.runtime.noMatches")}
+            help={selectedRuntime.executable === "auto" && detectedExecutable?.available
+              ? t("settings.agent.runtime.detected")
+              : t("settings.agent.runtime.manual")}
+          />
           {isOpenCode && (
             <>
               <InputField
