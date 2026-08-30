@@ -25,6 +25,7 @@ function ChatHistoryPanel(): JSX.Element {
   const userName = "Me";
 
   const validMessages = messages.filter((msg) => msg.content || // Keep messages with content
+     (msg.type === 'reasoning' && msg.status === 'running') ||
      (msg.type === 'tool_call_status' && msg.status === 'running') || // Keep running tools
      (msg.type === 'tool_call_status' && msg.status === 'completed') || // Keep completed tools
      (msg.type === 'tool_call_status' && msg.status === 'error'), // Keep error tools
@@ -53,6 +54,46 @@ function ChatHistoryPanel(): JSX.Element {
               </Box>
             ) : (
               validMessages.map((msg) => {
+                if (msg.type === 'reasoning') {
+                  return (
+                    <Box
+                      key={msg.id}
+                      ml="12"
+                      mr="4"
+                      my="2"
+                      pl="3"
+                      borderLeftWidth="2px"
+                      borderColor="whiteAlpha.300"
+                    >
+                      <Flex align="center" gap="2" mb={msg.content ? "1" : "0"}>
+                        {msg.status === 'running' && (
+                          <Spinner size="xs" color="whiteAlpha.500" />
+                        )}
+                        <Text
+                          color="whiteAlpha.500"
+                          fontSize="2xs"
+                          fontWeight="semibold"
+                          textTransform="uppercase"
+                        >
+                          {msg.status === 'running'
+                            ? t('sidebar.thinking')
+                            : t('sidebar.reasoning')}
+                        </Text>
+                      </Flex>
+                      {msg.content && (
+                        <Text
+                          color="whiteAlpha.700"
+                          fontSize="xs"
+                          lineHeight="1.65"
+                          whiteSpace="pre-wrap"
+                          overflowWrap="anywhere"
+                        >
+                          {msg.content}
+                        </Text>
+                      )}
+                    </Box>
+                  );
+                }
                 // Check if it's a tool call message
                 if (msg.type === 'tool_call_status') {
                   return (

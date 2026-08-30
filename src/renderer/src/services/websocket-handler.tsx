@@ -29,8 +29,15 @@ function WebSocketHandler({ children }: { children: React.ReactNode }) {
   const [baseUrl, setBaseUrl] = useLocalStorage<string>('baseUrl', defaultBaseUrl);
   const { aiState, setAiState, backendSynthComplete, setBackendSynthComplete } = useAiState();
   const { setModelInfo } = useLive2DConfig();
-  const { setSubtitleText } = useSubtitle();
-  const { clearResponse, setForceNewMessage, appendHumanMessage, appendOrUpdateToolCallMessage } = useChatHistory();
+  const { subtitleText, setSubtitleText } = useSubtitle();
+  const {
+    clearResponse,
+    setForceNewMessage,
+    appendHumanMessage,
+    appendOrUpdateToolCallMessage,
+    appendOrUpdateReasoningMessage,
+    finishRunningReasoning,
+  } = useChatHistory();
   const { addAudioTask } = useAudioTask();
   const bgUrlContext = useBgUrl();
   const { confUid, setConfName, setConfUid, setConfigFiles } = useConfig();
@@ -72,6 +79,10 @@ function WebSocketHandler({ children }: { children: React.ReactNode }) {
         clearResponse();
         break;
       case 'conversation-chain-end':
+        finishRunningReasoning();
+        if (subtitleText === 'Thinking...') {
+          setSubtitleText('');
+        }
         audioTaskQueue.addTask(() => new Promise<void>((resolve) => {
           setAiState((currentState: AiState) => {
             if (currentState === 'thinking-speaking') {
@@ -89,7 +100,7 @@ function WebSocketHandler({ children }: { children: React.ReactNode }) {
       default:
         console.warn('Unknown control command:', controlText);
     }
-  }, [setAiState, clearResponse, setForceNewMessage, startMic, stopMic]);
+  }, [setAiState, clearResponse, finishRunningReasoning, setSubtitleText, startMic, stopMic, subtitleText]);
 
   const handleWebSocketMessage = useCallback((message: MessageEvent) => {
     console.log('Received message from server:', message);
@@ -247,6 +258,10 @@ function WebSocketHandler({ children }: { children: React.ReactNode }) {
         setBackendSynthComplete(true);
         break;
       case 'conversation-chain-end':
+        finishRunningReasoning();
+        if (subtitleText === 'Thinking...') {
+          setSubtitleText('');
+        }
         if (!audioTaskQueue.hasTask()) {
           setAiState((currentState: AiState) => {
             if (currentState === 'thinking-speaking') {
@@ -286,10 +301,25 @@ function WebSocketHandler({ children }: { children: React.ReactNode }) {
           console.warn('Received incomplete tool_call_status message:', message);
         }
         break;
+      case 'reasoning-start':
+      case 'reasoning-delta':
+      case 'reasoning-end':
+        if (message.reasoning_id) {
+          appendOrUpdateReasoningMessage({
+            reasoning_id: message.reasoning_id,
+            type: 'reasoning',
+            role: 'ai',
+            content: message.type === 'reasoning-delta' ? message.text || '' : '',
+            name: message.name,
+            status: message.type === 'reasoning-end' ? 'completed' : 'running',
+            timestamp: new Date().toISOString(),
+          });
+        }
+        break;
       default:
         console.warn('Unknown message type:', message.type);
     }
-  }, [aiState, addAudioTask, appendHumanMessage, baseUrl, bgUrlContext, setAiState, setConfName, setConfUid, setConfigFiles, setCurrentHistoryUid, setHistoryList, setMessages, setModelInfo, setSubtitleText, startMic, stopMic, setSelfUid, setGroupMembers, setIsOwner, backendSynthComplete, setBackendSynthComplete, clearResponse, handleControlMessage, appendOrUpdateToolCallMessage, interrupt, setBrowserViewData, t]);
+  }, [aiState, addAudioTask, appendHumanMessage, baseUrl, bgUrlContext, setAiState, setConfName, setConfUid, setConfigFiles, setCurrentHistoryUid, setHistoryList, setMessages, setModelInfo, setSubtitleText, startMic, stopMic, subtitleText, setSelfUid, setGroupMembers, setIsOwner, backendSynthComplete, setBackendSynthComplete, clearResponse, finishRunningReasoning, handleControlMessage, appendOrUpdateToolCallMessage, appendOrUpdateReasoningMessage, interrupt, setBrowserViewData, t]);
 
   useEffect(() => {
     wsService.connect(wsUrl);

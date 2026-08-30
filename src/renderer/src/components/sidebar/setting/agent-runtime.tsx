@@ -441,6 +441,19 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
         )}
       </Stack>
 
+      <SwitchField
+        label={t("settings.agent.runtime.showReasoning")}
+        checked={selectedRuntime.show_reasoning}
+        onChange={(value) => {
+          if (isOpenCode) {
+            handleOpenCodeSettingChange("show_reasoning", value);
+            return;
+          }
+          handleCLISettingChange(runtimeKey, "show_reasoning", value);
+        }}
+        help={t("settings.agent.runtime.showReasoningHelp")}
+      />
+
       {(runtimeError ||
         connection.error ||
         executableError ||

@@ -16,6 +16,9 @@ interface ChatHistoryState {
   appendHumanMessage: (content: string) => void;
   appendAIMessage: (content: string, name?: string, avatar?: string) => void;
   appendOrUpdateToolCallMessage: (toolMessageData: Partial<Message>) => void; // Accept partial data
+  appendOrUpdateReasoningMessage: (reasoningData: Partial<Message>) => void;
+  finishRunningReasoning: () => void;
+  clearReasoningMessages: () => void;
   setMessages: (messages: Message[]) => void; // Use the unified Message type
   setHistoryList: (
     value: HistoryInfo[] | ((prev: HistoryInfo[]) => HistoryInfo[])
@@ -157,6 +160,48 @@ export function ChatHistoryProvider({ children }: { children: React.ReactNode })
     });
   }, []);
 
+  const appendOrUpdateReasoningMessage = useCallback((reasoningData: Partial<Message>) => {
+    if (!reasoningData.reasoning_id || !reasoningData.status) return;
+    setMessages((previous) => {
+      const index = previous.findIndex(
+        (message) => message.type === 'reasoning'
+          && message.reasoning_id === reasoningData.reasoning_id,
+      );
+      if (index === -1) {
+        return [...previous, {
+          id: `reasoning-${reasoningData.reasoning_id}`,
+          reasoning_id: reasoningData.reasoning_id,
+          role: 'ai',
+          type: 'reasoning',
+          content: reasoningData.content || '',
+          status: reasoningData.status,
+          name: reasoningData.name,
+          timestamp: reasoningData.timestamp || new Date().toISOString(),
+        }];
+      }
+      const updatedMessages = [...previous];
+      updatedMessages[index] = {
+        ...updatedMessages[index],
+        content: updatedMessages[index].content + (reasoningData.content || ''),
+        status: reasoningData.status,
+        timestamp: reasoningData.timestamp || new Date().toISOString(),
+      };
+      return updatedMessages;
+    });
+  }, []);
+
+  const finishRunningReasoning = useCallback(() => {
+    setMessages((previous) => previous.map((message) => (
+      message.type === 'reasoning' && message.status === 'running'
+        ? { ...message, status: 'completed' }
+        : message
+    )));
+  }, []);
+
+  const clearReasoningMessages = useCallback(() => {
+    setMessages((previous) => previous.filter((message) => message.type !== 'reasoning'));
+  }, []);
+
   /**
    * Update the history list with the latest message
    * @param uid - History unique identifier
@@ -208,6 +253,9 @@ export function ChatHistoryProvider({ children }: { children: React.ReactNode })
       appendHumanMessage,
       appendAIMessage,
       appendOrUpdateToolCallMessage, // Add to context value
+      appendOrUpdateReasoningMessage,
+      finishRunningReasoning,
+      clearReasoningMessages,
       setMessages,
       setHistoryList,
       setCurrentHistoryUid,
@@ -225,6 +273,9 @@ export function ChatHistoryProvider({ children }: { children: React.ReactNode })
       appendHumanMessage,
       appendAIMessage,
       appendOrUpdateToolCallMessage, // Add dependency
+      appendOrUpdateReasoningMessage,
+      finishRunningReasoning,
+      clearReasoningMessages,
       updateHistoryList,
       fullResponse,
       appendResponse,

@@ -36,7 +36,8 @@ export interface Message {
   avatar?: string;
 
   // Fields for different message types (make optional)
-  type?: 'text' | 'tool_call_status'; // Add possible types, default to 'text' if omitted
+  type?: 'text' | 'tool_call_status' | 'reasoning';
+  reasoning_id?: string;
   tool_id?: string; // Specific to tool calls
   tool_name?: string; // Specific to tool calls
   status?: 'running' | 'completed' | 'error'; // Specific to tool calls
@@ -76,6 +77,7 @@ export interface MessageEvent {
   is_owner?: boolean;
   client_uid?: string;
   forwarded?: boolean;
+  reasoning_id?: string;
   display_text?: DisplayText;
   live2d_model?: string;
   browser_view?: {

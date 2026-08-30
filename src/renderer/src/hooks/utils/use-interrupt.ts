@@ -8,7 +8,7 @@ import { useAudioTask } from './use-audio-task';
 export const useInterrupt = () => {
   const { aiState, setAiState } = useAiState();
   const { sendMessage } = useWebSocket();
-  const { fullResponse, clearResponse } = useChatHistory();
+  const { fullResponse, clearResponse, finishRunningReasoning } = useChatHistory();
   // const { currentModel } = useLive2DModel();
   const { subtitleText, setSubtitleText } = useSubtitle();
   const { stopCurrentAudioAndLipSync } = useAudioTask();
@@ -22,6 +22,7 @@ export const useInterrupt = () => {
     audioTaskQueue.clearQueue();
 
     setAiState('interrupted');
+    finishRunningReasoning();
 
     if (sendSignal) {
       sendMessage({

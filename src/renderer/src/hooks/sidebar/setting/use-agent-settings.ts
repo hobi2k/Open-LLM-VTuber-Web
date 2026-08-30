@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useProactiveSpeak } from "@/context/proactive-speak-context";
 import { useWebSocket } from "@/context/websocket-context";
+import { useChatHistory } from "@/context/chat-history-context";
 
 interface UseAgentSettingsProps {
   onSave?: (callback: () => void) => () => void;
@@ -91,6 +92,7 @@ export interface OpenCodeRuntimeSettings {
   timeout: number;
   keep_sessions: boolean;
   allow_tools: boolean;
+  show_reasoning: boolean;
   has_server_password: boolean;
   connection: OpenCodeConnection;
 }
@@ -103,6 +105,7 @@ export interface CLIRuntimeSettings {
   provider: string;
   workspace_directory: string;
   timeout: number;
+  show_reasoning: boolean;
   connection: CLIConnection;
 }
 
@@ -150,6 +153,7 @@ const defaultRuntimeSettings: AgentRuntimeSettings = {
     timeout: 300,
     keep_sessions: false,
     allow_tools: false,
+    show_reasoning: false,
     has_server_password: false,
     connection: {
       connected: false,
@@ -169,6 +173,7 @@ const defaultRuntimeSettings: AgentRuntimeSettings = {
     provider: "",
     workspace_directory: ".",
     timeout: 300,
+    show_reasoning: false,
     connection: unavailableCLI,
   },
   codex: {
@@ -179,6 +184,7 @@ const defaultRuntimeSettings: AgentRuntimeSettings = {
     provider: "",
     workspace_directory: ".",
     timeout: 300,
+    show_reasoning: false,
     connection: unavailableCLI,
   },
   hermes: {
@@ -189,6 +195,7 @@ const defaultRuntimeSettings: AgentRuntimeSettings = {
     provider: "",
     workspace_directory: ".",
     timeout: 300,
+    show_reasoning: false,
     connection: unavailableCLI,
   },
 };
@@ -217,6 +224,7 @@ export function useAgentSettings({
 }: UseAgentSettingsProps = {}) {
   const { settings: persistedSettings, updateSettings } = useProactiveSpeak();
   const { baseUrl } = useWebSocket();
+  const { clearReasoningMessages } = useChatHistory();
   const [tempSettings, setTempSettings] = useState({
     allowProactiveSpeak: persistedSettings.allowProactiveSpeak,
     idleSecondsToSpeak: persistedSettings.idleSecondsToSpeak,
@@ -410,13 +418,20 @@ export function useAgentSettings({
       const payload = (await response.json()) as AgentRuntimeSettings;
       setRuntimeSettings(payload);
       setOriginalRuntimeSettings(payload);
+      const selectedRuntime = {
+        opencode_llm: payload.opencode,
+        claude_code_llm: payload.claude_code,
+        codex_cli_llm: payload.codex,
+        hermes_cli_llm: payload.hermes,
+      }[payload.provider];
+      if (!selectedRuntime.show_reasoning) clearReasoningMessages();
       await refreshRuntimeCatalog();
       setRuntimeState("ready");
     } catch (error) {
       setRuntimeError(error instanceof Error ? error.message : String(error));
       setRuntimeState("error");
     }
-  }, [baseUrl, runtimeSettings, refreshRuntimeCatalog]);
+  }, [baseUrl, clearReasoningMessages, runtimeSettings, refreshRuntimeCatalog]);
 
   const checkRuntimeConnections = useCallback(async () => {
     setRuntimeState("loading");

@@ -73,6 +73,8 @@
         "timeout": "超时（秒）",
         "keepSessions": "保留 OpenCode 会话",
         "allowTools": "允许编码工具",
+        "showReasoning": "显示思考内容",
+        "showReasoningHelp": "将推理与最终回复分开显示，不会更改模型的推理设置。",
         "useDefault": "使用 CLI 默认值",
         "autoDetect": "自动检测",
         "detected": "已检测",
@@ -124,6 +126,8 @@
     "browser": "浏览器",
     "live": "直播",
     "noMessages": "暂无消息。开始对话吧！",
+    "thinking": "思考中",
+    "reasoning": "推理",
     "noBrowserSession": "无活跃浏览器会话",
     "browserSession": "浏览器会话"
   },

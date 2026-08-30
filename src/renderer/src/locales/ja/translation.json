@@ -73,6 +73,8 @@
         "timeout": "タイムアウト（秒）",
         "keepSessions": "OpenCodeセッションを保持",
         "allowTools": "コーディングツールを許可",
+        "showReasoning": "思考内容を表示",
+        "showReasoningHelp": "推論を最終回答とは別に表示します。モデルの推論設定は変更しません。",
         "useDefault": "CLIの既定値を使用",
         "autoDetect": "自動検出",
         "detected": "検出済み",
@@ -124,6 +126,8 @@
     "browser": "ブラウザー",
     "live": "ライブ",
     "noMessages": "まだメッセージがありません。会話を始めましょう。",
+    "thinking": "思考中",
+    "reasoning": "推論",
     "noBrowserSession": "有効なブラウザーセッションがありません",
     "browserSession": "ブラウザーセッション"
   },

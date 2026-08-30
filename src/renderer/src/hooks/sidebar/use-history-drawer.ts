@@ -21,7 +21,8 @@ export const useHistoryDrawer = () => {
     if (!uid || uid === currentHistoryUid) return;
 
     if (currentHistoryUid && messages.length > 0) {
-      const latestMessage = messages[messages.length - 1];
+      const latestMessage = messages.slice().reverse()
+        .find((message) => message.type !== 'reasoning') || null;
       updateHistoryList(currentHistoryUid, latestMessage);
     }
 
@@ -51,7 +52,14 @@ export const useHistoryDrawer = () => {
 
   const getLatestMessageContent = (history: HistoryInfo) => {
     if (history.uid === currentHistoryUid && messages.length > 0) {
-      const latestMessage = messages[messages.length - 1];
+      const latestMessage = messages.slice().reverse()
+        .find((message) => message.type !== 'reasoning');
+      if (!latestMessage) {
+        return {
+          content: '',
+          timestamp: history.timestamp,
+        };
+      }
       return {
         content: latestMessage.content,
         timestamp: latestMessage.timestamp,
