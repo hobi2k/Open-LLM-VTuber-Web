@@ -5,6 +5,7 @@ import { useEffect, useCallback, RefObject, useRef } from 'react';
 import { ModelInfo } from '@/context/live2d-config-context';
 import { LAppDelegate } from '../../../WebSDK/src/lappdelegate';
 import { LAppLive2DManager } from '../../../WebSDK/src/lapplive2dmanager';
+import { gl } from '../../../WebSDK/src/lappglmanager';
 import { useMode } from '@/context/mode-context';
 
 // Constants for model scaling behavior
@@ -198,6 +199,10 @@ export const useLive2DResize = ({
       canvas.style.width = `${width}px`;
       canvas.style.height = `${height}px`;
 
+      if (!gl) {
+        isResizingRef.current = false;
+        return;
+      }
       const delegate = LAppDelegate.getInstance();
       if (delegate) {
         delegate.onResize();

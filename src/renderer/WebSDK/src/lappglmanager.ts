@@ -50,7 +50,7 @@ export class LAppGlManager {
     gl = canvas.getContext("webgl2") ?? canvas.getContext("webgl");
 
     if (!gl) {
-      console.error("Cannot initialize WebGL for the Live2D canvas");
+      console.warn("Cannot initialize WebGL for the Live2D canvas");
     }
   }
 

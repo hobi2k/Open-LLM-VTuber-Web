@@ -29,6 +29,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  InteractionMode,
   RuntimeModel,
   RuntimeProvider,
   RuntimeSession,
@@ -54,6 +55,20 @@ const runtimes = [
   { label: "Hermes", value: "hermes_cli_llm" },
 ];
 
+function formatSessionDate(value: number | string | null): string {
+  if (value === null || value === "") return "";
+  const numeric = Number(value);
+  const date = Number.isNaN(numeric)
+    ? new Date(value)
+    : new Date(numeric > 1_000_000_000_000 ? numeric : numeric * 1000);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
 function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
   const { t } = useTranslation();
   const { baseUrl, setBaseUrl, wsUrl, setWsUrl } = useWebSocket();
@@ -78,6 +93,7 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
   } = useAgentSettings({ onSave, onCancel });
   const [projectDialogOpen, setProjectDialogOpen] = useState(false);
   const [projectPath, setProjectPath] = useState("");
+  const [sessionScope, setSessionScope] = useState<"all" | "project">("all");
   const [recoveryBaseUrl, setRecoveryBaseUrl] = useState(baseUrl);
   const [recoveryWsUrl, setRecoveryWsUrl] = useState(wsUrl);
 
@@ -99,6 +115,7 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
   const available =
     "connected" in connection ? connection.connected : connection.available;
   const launchMode = selectedRuntime.launch_mode;
+  const interactionMode = selectedRuntime.interaction_mode || "character";
   const selectedProvider = isOpenCode
     ? runtimeSettings.opencode.provider_id
     : runtimeSettings[runtimeKey].provider;
@@ -207,6 +224,16 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
     selectedRuntime.workspace_directory,
     t,
   ]);
+  const scopedSessionOptions = useMemo(
+    () => (
+      sessionScope === "all"
+        ? sessionOptions
+        : sessionOptions.filter(
+          (session) => session.workspace === selectedRuntime.workspace_directory,
+        )
+    ),
+    [sessionOptions, sessionScope, selectedRuntime.workspace_directory],
+  );
   const sessionChoices = useMemo<EditableChoice[]>(
     () => [
       {
@@ -214,14 +241,16 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
         label: t("settings.agent.runtime.newConversation"),
         value: "",
       },
-      ...sessionOptions.map((session) => ({
+      ...scopedSessionOptions.map((session) => ({
         key: session.id,
         label: session.title,
         value: session.id,
-        meta: session.workspace.split(/[\\/]/).filter(Boolean).pop() || "Local",
+        meta: [session.source, session.workspace, formatSessionDate(session.updated_at)]
+          .filter(Boolean)
+          .join(" · "),
       })),
     ],
-    [sessionOptions, t],
+    [scopedSessionOptions, t],
   );
   const selectedSession = sessionOptions.find(
     (session) => session.id === selectedRuntime.session_id,
@@ -299,6 +328,27 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
     }
     handleCLISettingChange(runtimeKey, "provider", "omlx");
     handleCLISettingChange(runtimeKey, "model", model.id);
+  };
+
+  const changeInteractionMode = (value: string): void => {
+    if (value !== "character" && value !== "coding") return;
+    const mode = value as InteractionMode;
+    if (isOpenCode) {
+      handleOpenCodeSettingChange("interaction_mode", mode);
+      if (mode === "coding") {
+        handleOpenCodeSettingChange("allow_tools", true);
+        if (runtimeSettings.opencode.agent === "vtuber") {
+          handleOpenCodeSettingChange("agent", "build");
+        }
+      } else if (runtimeSettings.opencode.agent === "build") {
+        handleOpenCodeSettingChange("agent", "vtuber");
+      }
+      return;
+    }
+    handleCLISettingChange(runtimeKey, "interaction_mode", mode);
+    if (mode === "coding") {
+      handleCLISettingChange(runtimeKey, "allow_tools", true);
+    }
   };
 
   const changeSession = (value: string): void => {
@@ -490,6 +540,51 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
             />
           </SegmentGroup.Root>
         )}
+
+        <Stack gap="1.5">
+          <Text
+            color="#aeb7bf"
+            fontSize="xs"
+            fontWeight="medium"
+            lineHeight="1.4"
+          >
+            {t("settings.agent.runtime.interactionMode")}
+          </Text>
+          <SegmentGroup.Root
+            value={interactionMode}
+            onValueChange={(details) => {
+              if (details.value) changeInteractionMode(details.value);
+            }}
+            size="sm"
+            width="full"
+            bg="#11171b"
+            border="1px solid"
+            borderColor="#252e35"
+            borderRadius="7px"
+            p="1"
+          >
+            <SegmentGroup.Indicator borderRadius="5px" bg="#273139" />
+            <SegmentGroup.Items
+              items={[
+                {
+                  label: t("settings.agent.runtime.characterMode"),
+                  value: "character",
+                },
+                {
+                  label: t("settings.agent.runtime.codingMode"),
+                  value: "coding",
+                },
+              ]}
+              color="#c7cfd6"
+              minHeight="36px"
+              minWidth="0"
+              flex="1"
+              justifyContent="center"
+              whiteSpace="normal"
+              textAlign="center"
+            />
+          </SegmentGroup.Root>
+        </Stack>
       </Stack>
 
       <SwitchField
@@ -632,6 +727,53 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
         </Button>
       </Flex>
 
+      <Stack gap="1.5">
+        <Text
+          color="#aeb7bf"
+          fontSize="xs"
+          fontWeight="medium"
+          lineHeight="1.4"
+        >
+          {t("settings.agent.runtime.sessionScope")}
+        </Text>
+        <SegmentGroup.Root
+          value={sessionScope}
+          onValueChange={(details) => {
+            if (details.value === "all" || details.value === "project") {
+              setSessionScope(details.value);
+            }
+          }}
+          size="sm"
+          width="full"
+          bg="#11171b"
+          border="1px solid"
+          borderColor="#252e35"
+          borderRadius="7px"
+          p="1"
+        >
+          <SegmentGroup.Indicator borderRadius="5px" bg="#273139" />
+          <SegmentGroup.Items
+            items={[
+              {
+                label: t("settings.agent.runtime.allProjects"),
+                value: "all",
+              },
+              {
+                label: t("settings.agent.runtime.currentProject"),
+                value: "project",
+              },
+            ]}
+            color="#c7cfd6"
+            minHeight="36px"
+            minWidth="0"
+            flex="1"
+            justifyContent="center"
+            whiteSpace="normal"
+            textAlign="center"
+          />
+        </SegmentGroup.Root>
+      </Stack>
+
       <EditableChoiceField
         label={t("settings.agent.runtime.conversation")}
         value={selectedRuntime.session_id}
@@ -639,7 +781,19 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
         choices={sessionChoices}
         placeholder={t("settings.agent.runtime.selectConversation")}
         emptyText={t("settings.agent.runtime.noMatches")}
-        help={selectedSession?.title}
+        help={[
+          selectedSession?.title,
+          sessionScope === "all"
+            ? t("settings.agent.runtime.sessionCount", {
+              count: sessionOptions.length,
+            })
+            : t("settings.agent.runtime.projectSessionCount", {
+              count: scopedSessionOptions.length,
+              total: sessionOptions.length,
+            }),
+        ].filter(Boolean).join(" · ")}
+        maxVisible={160}
+        overflowText={t("settings.agent.runtime.searchAllSessions")}
       />
 
       <Box
@@ -689,13 +843,19 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
                 onChange={(value) => handleOpenCodeSettingChange("agent", value)}
                 help={t("settings.agent.runtime.profileHelp")}
               />
-              <SwitchField
-                label={t("settings.agent.runtime.allowTools")}
-                checked={runtimeSettings.opencode.allow_tools}
-                onChange={(value) => handleOpenCodeSettingChange("allow_tools", value)}
-              />
             </>
           )}
+          <SwitchField
+            label={t("settings.agent.runtime.allowTools")}
+            checked={selectedRuntime.allow_tools}
+            onChange={(value) => {
+              if (isOpenCode) {
+                handleOpenCodeSettingChange("allow_tools", value);
+                return;
+              }
+              handleCLISettingChange(runtimeKey, "allow_tools", value);
+            }}
+          />
           <NumberField
             label={t("settings.agent.runtime.timeout")}
             value={selectedRuntime.timeout}

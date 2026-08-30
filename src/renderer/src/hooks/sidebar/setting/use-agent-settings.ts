@@ -33,6 +33,7 @@ interface CLIConnection {
 }
 
 export type LaunchMode = "direct" | "omlx";
+export type InteractionMode = "character" | "coding";
 
 export interface RuntimeModel {
   id: string;
@@ -51,6 +52,7 @@ export interface RuntimeSession {
   title: string;
   workspace: string;
   updated_at: number | string | null;
+  source?: string;
 }
 
 interface RuntimeCatalog {
@@ -88,6 +90,7 @@ export interface OpenCodeRuntimeSettings {
   model: string;
   agent: string;
   launch_mode: LaunchMode;
+  interaction_mode: InteractionMode;
   session_id: string;
   workspace_directory: string;
   timeout: number;
@@ -101,12 +104,14 @@ export interface OpenCodeRuntimeSettings {
 export interface CLIRuntimeSettings {
   executable: string;
   launch_mode: LaunchMode;
+  interaction_mode: InteractionMode;
   session_id: string;
   model: string;
   provider: string;
   workspace_directory: string;
   timeout: number;
   show_reasoning: boolean;
+  allow_tools: boolean;
   connection: CLIConnection;
 }
 
@@ -149,6 +154,7 @@ const defaultRuntimeSettings: AgentRuntimeSettings = {
     model: "",
     agent: "vtuber",
     launch_mode: "direct",
+    interaction_mode: "character",
     session_id: "",
     workspace_directory: ".",
     timeout: 300,
@@ -169,34 +175,40 @@ const defaultRuntimeSettings: AgentRuntimeSettings = {
   claude_code: {
     executable: "claude",
     launch_mode: "direct",
+    interaction_mode: "character",
     session_id: "",
     model: "",
     provider: "",
     workspace_directory: ".",
     timeout: 300,
     show_reasoning: false,
+    allow_tools: false,
     connection: unavailableCLI,
   },
   codex: {
     executable: "codex",
     launch_mode: "direct",
+    interaction_mode: "character",
     session_id: "",
     model: "",
     provider: "",
     workspace_directory: ".",
     timeout: 300,
     show_reasoning: false,
+    allow_tools: false,
     connection: unavailableCLI,
   },
   hermes: {
     executable: "hermes",
     launch_mode: "direct",
+    interaction_mode: "character",
     session_id: "",
     model: "",
     provider: "",
     workspace_directory: ".",
     timeout: 300,
     show_reasoning: false,
+    allow_tools: false,
     connection: unavailableCLI,
   },
 };

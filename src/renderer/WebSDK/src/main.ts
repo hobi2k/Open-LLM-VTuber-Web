@@ -12,6 +12,12 @@ import * as LAppDefine from "./lappdefine";
 import { LAppGlManager } from "./lappglmanager";
 import { LAppLive2DManager } from "./lapplive2dmanager";
 
+let live2DReady = false;
+
+export function isLive2DReady(): boolean {
+  return live2DReady;
+}
+
 /**
  * Initialize the Live2D application
  */
@@ -23,14 +29,13 @@ export function initializeLive2D(): void {
   console.log("Model directories:", LAppDefine.ModelDir);
 
   // Clean up any existing instances first
-  if (LAppDelegate.getInstance()) {
-    // Release existing model resources
-    LAppLive2DManager.releaseInstance();
-  }
+  live2DReady = false;
+  LAppDelegate.releaseInstance();
+  LAppLive2DManager.releaseInstance();
 
   const glManager = LAppGlManager.getInstance();
   if (!glManager.isReady()) {
-    console.error("Failed to initialize Live2D: WebGL is unavailable");
+    console.warn("Live2D is unavailable because WebGL could not be initialized");
     return;
   }
 
@@ -40,6 +45,7 @@ export function initializeLive2D(): void {
   }
 
   LAppDelegate.getInstance().run();
+  live2DReady = true;
 
   (window as any).getLive2DManager = () => LAppLive2DManager.getInstance();
 
@@ -113,6 +119,7 @@ window.addEventListener(
   "resize",
   () => {
     if (LAppDefine.CanvasSize === "auto") {
+      if (!live2DReady) return;
       LAppDelegate.getInstance().onResize();
     }
   },

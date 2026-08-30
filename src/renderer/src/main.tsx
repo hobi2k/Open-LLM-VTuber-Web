@@ -2,6 +2,7 @@ import { createRoot } from 'react-dom/client';
 import './index.css';
 import App from './App';
 import { LAppAdapter } from '../WebSDK/src/lappadapter';
+import { isLive2DReady } from '../WebSDK/src/main';
 import './i18n';
 
 const originalConsoleWarn = console.warn;
@@ -17,7 +18,7 @@ const originalConsoleError = console.error;
 const errorMessagesToIgnore = ["Warning: Failed"];
 console.error = (...args: any[]) => {
   if (typeof args[0] === 'string') {
-    const shouldIgnore = errorMessagesToIgnore.some(msg => args[0].startsWith(msg));
+    const shouldIgnore = errorMessagesToIgnore.some((msg) => args[0].startsWith(msg));
     if (shouldIgnore) {
       return; // Suppress the warning
     }
@@ -27,11 +28,13 @@ console.error = (...args: any[]) => {
 };
 
 if (typeof window !== 'undefined') {
-  (window as any).getLAppAdapter = () => LAppAdapter.getInstance();
+  (window as any).getLAppAdapter = () => (
+    isLive2DReady() ? LAppAdapter.getInstance() : null
+  );
 
   // Dynamically load the Live2D Core script
-  const loadLive2DCore = () => {
-    return new Promise<void>((resolve, reject) => {
+  const loadLive2DCore = () => (
+    new Promise<void>((resolve, reject) => {
       const script = document.createElement('script');
       script.src = './libs/live2dcubismcore.js'; // Path to the copied script
       script.onload = () => {
@@ -43,8 +46,8 @@ if (typeof window !== 'undefined') {
         reject(error);
       };
       document.head.appendChild(script);
-    });
-  };
+    })
+  );
 
   // Load the script and then render the app
   loadLive2DCore()

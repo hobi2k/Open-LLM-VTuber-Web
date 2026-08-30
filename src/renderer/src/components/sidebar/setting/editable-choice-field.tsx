@@ -31,6 +31,8 @@ interface EditableChoiceFieldProps {
   emptyText: string;
   help?: string;
   disabled?: boolean;
+  maxVisible?: number;
+  overflowText?: string;
 }
 
 export function EditableChoiceField({
@@ -43,17 +45,23 @@ export function EditableChoiceField({
   emptyText,
   help,
   disabled = false,
+  maxVisible,
+  overflowText,
 }: EditableChoiceFieldProps): JSX.Element {
   const [open, setOpen] = useState(false);
   const [filtering, setFiltering] = useState(false);
   const normalized = value.trim().toLocaleLowerCase();
-  const visibleChoices = useMemo(() => {
+  const filteredChoices = useMemo(() => {
     if (!filtering || !normalized) return choices;
     return choices.filter((choice) => {
       const searchable = `${choice.label} ${choice.value} ${choice.meta || ""}`;
       return searchable.toLocaleLowerCase().includes(normalized);
     });
   }, [choices, filtering, normalized]);
+  const visibleChoices = maxVisible
+    ? filteredChoices.slice(0, maxVisible)
+    : filteredChoices;
+  const hiddenCount = filteredChoices.length - visibleChoices.length;
 
   const selectChoice = (choice: EditableChoice): void => {
     onInput(choice.value);
@@ -212,6 +220,18 @@ export function EditableChoiceField({
                       </Button>
                     );
                   })}
+                  {hiddenCount > 0 && overflowText && (
+                    <Text
+                      color="#83909a"
+                      fontSize="2xs"
+                      lineHeight="1.45"
+                      px="3"
+                      py="2.5"
+                      overflowWrap="anywhere"
+                    >
+                      {overflowText.replace("{{count}}", String(hiddenCount))}
+                    </Text>
+                  )}
                 </Stack>
               ) : (
                 <Text color="whiteAlpha.500" fontSize="xs" px="3" py="3">

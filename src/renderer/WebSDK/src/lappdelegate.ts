@@ -63,6 +63,7 @@ export class LAppDelegate {
    * Initialize the application.
    */
   public initialize(): boolean {
+    if (!canvas || !gl) return false;
     // Comment out the following code since canvas already exists in DOM
     // let parent = document.getElementById('live2d');
     // if (parent) {
@@ -117,6 +118,7 @@ export class LAppDelegate {
    * Resize canvas and re-initialize view.
    */
   public onResize(): void {
+    if (!canvas || !gl || !this._view) return;
     this._resizeCanvas();
     
     // Ensure view is properly initialized
@@ -171,6 +173,7 @@ export class LAppDelegate {
    * 执行处理。
    */
   public run(): void {
+    if (!gl || !this._view) return;
     if (this._animationFrameId !== null) {
       cancelAnimationFrame(this._animationFrameId);
     }
@@ -234,6 +237,7 @@ export class LAppDelegate {
    * 注册着色器。
    */
   public createShader(): WebGLProgram | null {
+    if (!gl) return null;
     // バーテックスシェーダーのコンパイル
     // 编译顶点着色器
     const vertexShaderId = gl!.createShader(gl!.VERTEX_SHADER);
