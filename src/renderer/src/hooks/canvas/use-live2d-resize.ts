@@ -26,7 +26,7 @@ interface UseLive2DResizeProps {
  */
 export const applyScale = (scale: number) => {
   try {
-    const manager = LAppLive2DManager.getInstance();
+    const manager = LAppLive2DManager.getExistingInstance();
     if (!manager) return;
 
     const model = manager.getModel(0);
@@ -247,7 +247,6 @@ export const useLive2DResize = ({
       animationFrameIdRef.current = null;
     }
   }, []);
-
 
   // Monitor container size changes using ResizeObserver
   useEffect(() => {

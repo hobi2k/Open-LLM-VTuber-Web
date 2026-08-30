@@ -28,10 +28,13 @@ export function initializeLive2D(): void {
     LAppLive2DManager.releaseInstance();
   }
 
-  if (
-    !LAppGlManager.getInstance() ||
-    !LAppDelegate.getInstance().initialize()
-  ) {
+  const glManager = LAppGlManager.getInstance();
+  if (!glManager.isReady()) {
+    console.error("Failed to initialize Live2D: WebGL is unavailable");
+    return;
+  }
+
+  if (!LAppDelegate.getInstance().initialize()) {
     console.error("Failed to initialize Live2D");
     return;
   }

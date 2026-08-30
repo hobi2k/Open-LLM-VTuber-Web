@@ -6,7 +6,7 @@
  */
 
 export let canvas: HTMLCanvasElement | null = null;
-export let gl: WebGLRenderingContext | null = null;
+export let gl: WebGLRenderingContext | WebGL2RenderingContext | null = null;
 export let s_instance: LAppGlManager | null = null;
 /**
  * Cubism SDKのサンプルで使用するWebGLを管理するクラス
@@ -47,16 +47,15 @@ export class LAppGlManager {
       return;
     }
 
-     gl = canvas.getContext("webgl2");
+    gl = canvas.getContext("webgl2") ?? canvas.getContext("webgl");
 
-     if (!gl) {
-       // gl初期化失敗
-       alert("Cannot initialize WebGL. This browser does not support.");
-       gl = null;
+    if (!gl) {
+      console.error("Cannot initialize WebGL for the Live2D canvas");
+    }
+  }
 
-       document.body.innerHTML =
-         "This browser does not support the <code>&lt;canvas&gt;</code> element.";
-     }
+  public isReady(): boolean {
+    return canvas !== null && gl !== null;
   }
 
   /**

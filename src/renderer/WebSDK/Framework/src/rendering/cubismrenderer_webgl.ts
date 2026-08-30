@@ -387,12 +387,12 @@ export class CubismClippingContext_WebGL extends CubismClippingContext {
    * 引数付きコンストラクタ
    */
   public constructor(
-    manager: CubismClippingManager_WebGL,
+    manager: CubismClippingManager<CubismClippingContext_WebGL>,
     clippingDrawableIndices: Int32Array,
     clipCount: number
   ) {
     super(clippingDrawableIndices, clipCount);
-    this._owner = manager;
+    this._owner = manager as CubismClippingManager_WebGL;
   }
 
   /**

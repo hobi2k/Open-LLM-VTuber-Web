@@ -93,10 +93,12 @@ export class LAppView {
     // this._gear.release();
     // this._gear = null;
 
-    this._back.release();
+    this._back?.release();
     this._back = null;
 
-    gl.deleteProgram(this._programId);
+    if (gl && this._programId) {
+      gl.deleteProgram(this._programId);
+    }
     this._programId = null;
   }
 
@@ -104,6 +106,8 @@ export class LAppView {
    * 描画する。
    */
   public render(): void {
+    if (!gl || !this._viewMatrix) return;
+
     gl.useProgram(this._programId);
 
     if (this._back) {
@@ -115,7 +119,8 @@ export class LAppView {
 
     gl.flush();
 
-    const live2DManager: LAppLive2DManager = LAppLive2DManager.getInstance();
+    const live2DManager = LAppLive2DManager.getExistingInstance();
+    if (!live2DManager) return;
 
     live2DManager.setViewMatrix(this._viewMatrix);
 

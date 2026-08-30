@@ -42,6 +42,10 @@ export class LAppLive2DManager {
     return s_instance;
   }
 
+  public static getExistingInstance(): LAppLive2DManager | null {
+    return s_instance ?? null;
+  }
+
   /**
    * クラスのインスタンス（シングルトン）を解放する。
    * 
@@ -49,7 +53,7 @@ export class LAppLive2DManager {
    */
   public static releaseInstance(): void {
     if (s_instance != null) {
-      s_instance = void 0;
+      s_instance.releaseAllModel();
     }
 
     s_instance = null;
@@ -189,17 +193,16 @@ export class LAppLive2DManager {
       LAppPal.printMessage(`[APP]model index: ${this._sceneIndex}`);
     }
 
-    // Use the directory name and file name from our configuration
-    const model: string = LAppDefine.ModelDir[index];
+    // Resize handlers may run before the server sends model configuration.
+    // That transient state must not become an invalid network request.
+    const model: string | undefined = LAppDefine.ModelDir[index];
+    const modelFileName = LAppDefine.ModelFileNames[index] || model;
+    if (!LAppDefine.ResourcesPath || !model || !modelFileName) {
+      return;
+    }
+
     const modelPath: string = LAppDefine.ResourcesPath + model + '/';
-    
-    // Use ModelFileNames if available, otherwise fall back to ModelDir
-    let modelJsonName: string = LAppDefine.ModelFileNames && 
-                                LAppDefine.ModelFileNames[index] ? 
-                                LAppDefine.ModelFileNames[index] : 
-                                LAppDefine.ModelDir[index];
-                                
-    modelJsonName += '.model3.json';
+    const modelJsonName = `${modelFileName}.model3.json`;
 
     if (LAppDefine.DebugLogEnable) {
       LAppPal.printMessage(`[APP]model path: ${modelPath}${modelJsonName}`);
@@ -211,6 +214,8 @@ export class LAppLive2DManager {
   }
 
   public setViewMatrix(m: CubismMatrix44) {
+    if (!m || !this._viewMatrix) return;
+
     for (let i = 0; i < 16; i++) {
       this._viewMatrix.getArray()[i] = m.getArray()[i];
     }

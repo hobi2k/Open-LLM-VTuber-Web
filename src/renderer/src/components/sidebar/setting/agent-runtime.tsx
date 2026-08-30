@@ -178,7 +178,7 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
 
   const sessionOptions = useMemo(() => {
     const sessions = runtimeCatalog.sessions[runtimeKey];
-    const current =
+    const current: RuntimeSession[] =
       selectedRuntime.session_id &&
       !sessions.some((session) => session.id === selectedRuntime.session_id)
         ? [

@@ -125,7 +125,7 @@ export class LAppDelegate {
       this._view.initializeSprite();
       
       // Try to get and center the model
-      const manager = LAppLive2DManager.getInstance();
+      const manager = LAppLive2DManager.getExistingInstance();
       if (manager) {
         const model = manager.getModel(0);
         if (model) {
@@ -148,10 +148,15 @@ export class LAppDelegate {
    * 解放する。
    */
   public release(): void {
-    this._textureManager!.release();
+    if (this._animationFrameId !== null) {
+      cancelAnimationFrame(this._animationFrameId);
+      this._animationFrameId = null;
+    }
+
+    this._textureManager?.release();
     this._textureManager = null;
 
-    this._view!.release();
+    this._view?.release();
     this._view = null;
 
     // リソースを解放
@@ -166,6 +171,10 @@ export class LAppDelegate {
    * 执行处理。
    */
   public run(): void {
+    if (this._animationFrameId !== null) {
+      cancelAnimationFrame(this._animationFrameId);
+    }
+
     // メインループ
     // 主循环
     const loop = (): void => {
@@ -179,7 +188,7 @@ export class LAppDelegate {
       if (LAppDefine.ENABLE_LIMITED_FRAME_RATE) {
         LAppPal.updateTime(false);
         if (LAppPal.getDeltaTime() < 1 / LAppDefine.LIMITED_FRAME_RATE) {
-          requestAnimationFrame(loop);
+          this._animationFrameId = requestAnimationFrame(loop);
           return;
         }
       }
@@ -215,7 +224,7 @@ export class LAppDelegate {
 
       // ループのために再帰呼び出し
       // 递归调用以进行循环
-      requestAnimationFrame(loop);
+      this._animationFrameId = requestAnimationFrame(loop);
     };
     loop();
   }
@@ -306,6 +315,7 @@ export class LAppDelegate {
     this._mouseX = 0.0;
     this._mouseY = 0.0;
     this._isEnd = false;
+    this._animationFrameId = null;
 
     this._cubismOption = new Option();
     this._view = new LAppView();
@@ -354,6 +364,7 @@ export class LAppDelegate {
   _mouseY: number; // マウスY座標 // 鼠标Y坐标
   _isEnd: boolean; // APP終了しているか // APP是否已结束
   _textureManager: LAppTextureManager | null; // テクスチャマネージャー // 纹理管理器
+  _animationFrameId: number | null;
 }
 
 /**

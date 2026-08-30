@@ -114,7 +114,7 @@ export interface AgentRuntimeSettings {
   hermes: CLIRuntimeSettings;
 }
 
-const unavailableCLI = {
+const unavailableCLI: CLIConnection = {
   available: false,
   path: null,
   version: null,
