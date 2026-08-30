@@ -1,5 +1,5 @@
 /* eslint-disable import/no-extraneous-dependencies */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Badge,
   Box,
@@ -69,6 +69,26 @@ function formatSessionDate(value: number | string | null): string {
   });
 }
 
+function normalizeWorkspacePath(path: string): string {
+  const normalized = path.trim().replace(/\\/g, "/");
+  if (normalized === "/" || /^[A-Za-z]:\/$/.test(normalized)) {
+    return normalized.toLocaleLowerCase();
+  }
+  const value = normalized.replace(/\/+$/, "");
+  return /^[A-Za-z]:/.test(value) ? value.toLocaleLowerCase() : value;
+}
+
+function workspaceBelongsToProject(workspace: string, project: string): boolean {
+  const normalizedWorkspace = normalizeWorkspacePath(workspace);
+  const normalizedProject = normalizeWorkspacePath(project);
+  if (!normalizedWorkspace || !normalizedProject) return false;
+  if (normalizedWorkspace === normalizedProject) return true;
+  if (normalizedProject === "/" || normalizedProject.endsWith("/")) {
+    return normalizedWorkspace.startsWith(normalizedProject);
+  }
+  return normalizedWorkspace.startsWith(`${normalizedProject}/`);
+}
+
 function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
   const { t } = useTranslation();
   const { baseUrl, setBaseUrl, wsUrl, setWsUrl } = useWebSocket();
@@ -116,6 +136,17 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
     "connected" in connection ? connection.connected : connection.available;
   const launchMode = selectedRuntime.launch_mode;
   const interactionMode = selectedRuntime.interaction_mode || "character";
+  const workspaceIdentity = `${runtimeKey}:${normalizeWorkspacePath(
+    selectedRuntime.workspace_directory,
+  )}`;
+  const previousWorkspaceIdentity = useRef(workspaceIdentity);
+
+  useEffect(() => {
+    if (previousWorkspaceIdentity.current === workspaceIdentity) return;
+    previousWorkspaceIdentity.current = workspaceIdentity;
+    setSessionScope("project");
+  }, [workspaceIdentity]);
+
   const selectedProvider = isOpenCode
     ? runtimeSettings.opencode.provider_id
     : runtimeSettings[runtimeKey].provider;
@@ -229,7 +260,10 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
       sessionScope === "all"
         ? sessionOptions
         : sessionOptions.filter(
-          (session) => session.workspace === selectedRuntime.workspace_directory,
+          (session) => workspaceBelongsToProject(
+            session.workspace,
+            selectedRuntime.workspace_directory,
+          ),
         )
     ),
     [sessionOptions, sessionScope, selectedRuntime.workspace_directory],
