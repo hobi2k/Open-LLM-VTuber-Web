@@ -39,6 +39,10 @@
       "scrollToResize": "启用滚轮缩放"
     },
     "asr": {
+      "inputTitle": "语音识别",
+      "active": "运行中",
+      "offline": "离线",
+      "loading": "正在加载音频引擎...",
       "autoStopMic": "AI开始说话时自动关闭麦克风",
       "autoStopMicDesc": "当AI开始说话时自动关闭麦克风，防止音频反馈",
       "autoStartMicOnConvEnd": "对话结束时自动开启麦克风",
@@ -51,6 +55,20 @@
       "negativeSpeechThresholdDesc": "停止语音检测的置信度下限(0-100)，数值越低检测越不敏感",
       "redemptionFrames": "验证帧数",
       "redemptionFramesDesc": "确认语音检测所需的连续帧数(1-100)，数值越高越能减少噪音触发"
+    },
+    "tts": {
+      "outputTitle": "语音输出",
+      "active": "运行中",
+      "offline": "离线",
+      "loading": "正在加载音频引擎...",
+      "engine": "TTS 引擎",
+      "selectEngine": "选择 TTS 引擎",
+      "voice": "声音",
+      "voicePlaceholder": "输入声音名称或 ID",
+      "voiceHelp": "该值必须受所选 TTS 引擎支持。",
+      "model": "模型",
+      "retry": "重试",
+      "restartHelp": "应用不同的引擎或声音会重新加载 VTuber 服务器的语音输出。"
     },
     "agent": {
       "allowProactiveSpeak": "允许AI主动发言",
@@ -99,7 +117,13 @@
         "add": "添加",
         "check": "检查",
         "apply": "应用",
-        "saving": "正在应用..."
+        "saving": "正在应用...",
+        "serverOffline": "无法连接 VTuber 服务器",
+        "serverOfflineHelp": "AI 运行时 API 位于 Open LLM VTuber 服务器。即使 oMLX 正在运行，VTuber 服务器仍可能已停止或使用了其他地址。",
+        "vtuberServerUrl": "VTuber 服务器地址",
+        "vtuberWebSocketUrl": "VTuber WebSocket 地址",
+        "applyAndRetry": "应用地址并重试",
+        "omlxServerHelp": "oMLX 是模型／运行时提供商，不能替代 VTuber 服务器 API。"
       }
     },
     "about": {
@@ -115,6 +139,9 @@
   },
   "footer": {
     "typeYourMessage": "输入您的消息...",
+    "muteMic": "关闭麦克风",
+    "unmuteMic": "开启麦克风",
+    "interrupt": "中断回复",
     "cameraControl": "点击启动摄像头",
     "cameraStopping": "点击停止摄像头",
     "screenControl": "点击开始屏幕共享",
@@ -128,6 +155,12 @@
     "noMessages": "暂无消息。开始对话吧！",
     "thinking": "思考中",
     "reasoning": "推理",
+    "conversation": "对话",
+    "messageCount": "{{count}} 条消息",
+    "you": "您",
+    "toolRunning": "正在使用 {{tool}}",
+    "toolCompleted": "已完成 {{tool}}",
+    "toolFailed": "{{tool}} 失败",
     "changeMode": "切换模式",
     "windowMode": "实时模式",
     "petMode": "桌面宠物模式",

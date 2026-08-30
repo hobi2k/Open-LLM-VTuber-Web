@@ -39,6 +39,10 @@
       "scrollToResize": "Enable Scroll to Resize"
     },
     "asr": {
+      "inputTitle": "Speech recognition",
+      "active": "Active",
+      "offline": "Offline",
+      "loading": "Loading audio engine...",
       "autoStopMic": "Auto Stop Mic When AI Start Speaking",
       "autoStopMicDesc": "Automatically stops microphone when AI begins speaking to prevent audio feedback",
       "autoStartMicOnConvEnd": "Auto Start Mic When Conversation End",
@@ -51,6 +55,20 @@
       "negativeSpeechThresholdDesc": "Confidence level (0-100) below which speech detection stops. Lower values make detection less sensitive",
       "redemptionFrames": "Redemption Frames",
       "redemptionFramesDesc": "Number of consecutive frames (1-100) needed to confirm speech detection. Higher values reduce noise triggers"
+    },
+    "tts": {
+      "outputTitle": "Voice output",
+      "active": "Active",
+      "offline": "Offline",
+      "loading": "Loading audio engine...",
+      "engine": "TTS engine",
+      "selectEngine": "Select a TTS engine",
+      "voice": "Voice",
+      "voicePlaceholder": "Enter a voice name or ID",
+      "voiceHelp": "The value must be supported by the selected TTS engine.",
+      "model": "Model",
+      "retry": "Retry",
+      "restartHelp": "Applying a different engine or voice reloads speech output on the VTuber server."
     },
     "agent": {
       "allowProactiveSpeak": "Allow AI to Speak Proactively",
@@ -99,7 +117,13 @@
         "add": "Add",
         "check": "Check",
         "apply": "Apply",
-        "saving": "Applying..."
+        "saving": "Applying...",
+        "serverOffline": "VTuber server is unreachable",
+        "serverOfflineHelp": "The AI runtime API belongs to the Open LLM VTuber server. oMLX can be running while this server is stopped or configured at a different address.",
+        "vtuberServerUrl": "VTuber server URL",
+        "vtuberWebSocketUrl": "VTuber WebSocket URL",
+        "applyAndRetry": "Apply address and retry",
+        "omlxServerHelp": "oMLX is a model/runtime provider; it does not replace the VTuber server API."
       }
     },
     "about": {
@@ -115,6 +139,9 @@
   },
   "footer": {
     "typeYourMessage": "Type your message...",
+    "muteMic": "Mute microphone",
+    "unmuteMic": "Unmute microphone",
+    "interrupt": "Interrupt response",
     "cameraControl": "Click to start camera",
     "cameraStopping": "Click to stop camera",
     "screenControl": "Click to start screen capture",
@@ -128,6 +155,12 @@
     "noMessages": "No messages yet. Start a conversation!",
     "thinking": "Thinking",
     "reasoning": "Reasoning",
+    "conversation": "Conversation",
+    "messageCount": "{{count}} messages",
+    "you": "You",
+    "toolRunning": "Using {{tool}}",
+    "toolCompleted": "Completed {{tool}}",
+    "toolFailed": "Failed {{tool}}",
     "changeMode": "Change mode",
     "windowMode": "Live mode",
     "petMode": "Pet mode",

@@ -53,24 +53,42 @@ const ToggleButton = memo(({ isCollapsed, onToggle }: ToggleButtonProps) => (
 
 ToggleButton.displayName = 'ToggleButton';
 
+function ActionButtonContent({ micOn, onMicToggle, onInterrupt }: ActionButtonsProps): JSX.Element {
+  const { t } = useTranslation();
+  return (
+    <HStack gap={2}>
+      <IconButton
+        aria-label={micOn ? t('footer.muteMic') : t('footer.unmuteMic')}
+        title={micOn ? t('footer.muteMic') : t('footer.unmuteMic')}
+        bg={micOn ? '#1f4939' : '#47262a'}
+        color={micOn ? '#8de0b7' : '#f09aa0'}
+        borderColor={micOn ? '#32664f' : '#6b383e'}
+        {...footerStyles.footer.actionButton}
+        onClick={onMicToggle}
+      >
+        {micOn ? <BsMicFill /> : <BsMicMuteFill />}
+      </IconButton>
+      <IconButton
+        aria-label={t('footer.interrupt')}
+        title={t('footer.interrupt')}
+        bg="#3b3423"
+        color="#e5c775"
+        borderColor="#5b5032"
+        {...footerStyles.footer.actionButton}
+        onClick={onInterrupt}
+      >
+        <IoHandRightSharp size="19" />
+      </IconButton>
+    </HStack>
+  );
+}
+
 const ActionButtons = memo(({ micOn, onMicToggle, onInterrupt }: ActionButtonsProps) => (
-  <HStack gap={2}>
-    <IconButton
-      bg={micOn ? 'green.500' : 'red.500'}
-      {...footerStyles.footer.actionButton}
-      onClick={onMicToggle}
-    >
-      {micOn ? <BsMicFill /> : <BsMicMuteFill />}
-    </IconButton>
-    <IconButton
-      aria-label="Raise hand"
-      bg="yellow.500"
-      {...footerStyles.footer.actionButton}
-      onClick={onInterrupt}
-    >
-      <IoHandRightSharp size="24" />
-    </IconButton>
-  </HStack>
+  <ActionButtonContent
+    micOn={micOn}
+    onMicToggle={onMicToggle}
+    onInterrupt={onInterrupt}
+  />
 ));
 
 ActionButtons.displayName = 'ActionButtons';
@@ -127,8 +145,8 @@ function Footer({ isCollapsed = false, onToggle }: FooterProps): JSX.Element {
     <Box {...footerStyles.footer.container(isCollapsed)}>
       <ToggleButton isCollapsed={isCollapsed} onToggle={onToggle} />
 
-      <Box pt="0" px="4">
-        <HStack width="100%" gap={4}>
+      <Box pt="0" px="3.5">
+        <HStack width="100%" gap={3} align="flex-end">
           <Box>
             <Box mb="1.5">
               <AIStateIndicator />

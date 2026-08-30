@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useProactiveSpeak } from "@/context/proactive-speak-context";
 import { useWebSocket } from "@/context/websocket-context";
 import { useChatHistory } from "@/context/chat-history-context";
+import { useLocalStorage } from "@/hooks/utils/use-local-storage";
 
 interface UseAgentSettingsProps {
   onSave?: (callback: () => void) => () => void;
@@ -233,13 +234,21 @@ export function useAgentSettings({
   const [originalSettings, setOriginalSettings] = useState({
     ...persistedSettings,
   });
-  const [runtimeSettings, setRuntimeSettings] = useState(
+  const [cachedRuntimeSettings, setCachedRuntimeSettings] = useLocalStorage(
+    "agentRuntimeSettings",
     defaultRuntimeSettings,
+  );
+  const [cachedRuntimeCatalog, setCachedRuntimeCatalog] = useLocalStorage(
+    "agentRuntimeCatalog",
+    defaultCatalog,
+  );
+  const [runtimeSettings, setRuntimeSettings] = useState(
+    cachedRuntimeSettings,
   );
   const [originalRuntimeSettings, setOriginalRuntimeSettings] = useState(
-    defaultRuntimeSettings,
+    cachedRuntimeSettings,
   );
-  const [runtimeCatalog, setRuntimeCatalog] = useState(defaultCatalog);
+  const [runtimeCatalog, setRuntimeCatalog] = useState(cachedRuntimeCatalog);
   const [runtimeState, setRuntimeState] = useState<
     "loading" | "ready" | "saving" | "error"
   >("loading");
@@ -275,20 +284,24 @@ export function useAgentSettings({
       setRuntimeSettings(payload);
       setOriginalRuntimeSettings(payload);
       setRuntimeCatalog(catalog);
+      setCachedRuntimeSettings(payload);
+      setCachedRuntimeCatalog(catalog);
       setRuntimeState("ready");
     } catch (error) {
       setRuntimeError(error instanceof Error ? error.message : String(error));
       setRuntimeState("error");
     }
-  }, [baseUrl]);
+  }, [baseUrl, setCachedRuntimeCatalog, setCachedRuntimeSettings]);
 
   const refreshRuntimeCatalog = useCallback(async () => {
     const response = await fetch(`${baseUrl}/api/agent-runtime/catalog`);
     if (!response.ok) {
       throw new Error(`Runtime catalog request failed (${response.status})`);
     }
-    setRuntimeCatalog((await response.json()) as RuntimeCatalog);
-  }, [baseUrl]);
+    const catalog = (await response.json()) as RuntimeCatalog;
+    setRuntimeCatalog(catalog);
+    setCachedRuntimeCatalog(catalog);
+  }, [baseUrl, setCachedRuntimeCatalog]);
 
   useEffect(() => {
     loadRuntimeSettings();
@@ -408,6 +421,7 @@ export function useAgentSettings({
   const saveRuntimeSettings = useCallback(async () => {
     setRuntimeState("saving");
     setRuntimeError(null);
+    setCachedRuntimeSettings(runtimeSettings);
     try {
       const response = await fetch(`${baseUrl}/api/agent-runtime/settings`, {
         method: "PUT",
@@ -418,6 +432,7 @@ export function useAgentSettings({
       const payload = (await response.json()) as AgentRuntimeSettings;
       setRuntimeSettings(payload);
       setOriginalRuntimeSettings(payload);
+      setCachedRuntimeSettings(payload);
       const selectedRuntime = {
         opencode_llm: payload.opencode,
         claude_code_llm: payload.claude_code,
@@ -431,7 +446,13 @@ export function useAgentSettings({
       setRuntimeError(error instanceof Error ? error.message : String(error));
       setRuntimeState("error");
     }
-  }, [baseUrl, clearReasoningMessages, runtimeSettings, refreshRuntimeCatalog]);
+  }, [
+    baseUrl,
+    clearReasoningMessages,
+    runtimeSettings,
+    refreshRuntimeCatalog,
+    setCachedRuntimeSettings,
+  ]);
 
   const checkRuntimeConnections = useCallback(async () => {
     setRuntimeState("loading");

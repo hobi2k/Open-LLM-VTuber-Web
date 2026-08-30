@@ -1,5 +1,5 @@
 /* eslint-disable import/no-extraneous-dependencies */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Badge,
   Box,
@@ -17,6 +17,7 @@ import {
   HiChevronDown,
   HiCommandLine,
   HiFolderPlus,
+  HiSignalSlash,
 } from "react-icons/hi2";
 import {
   DialogBody,
@@ -39,6 +40,7 @@ import {
   EditableChoiceField,
 } from "./editable-choice-field";
 import { settingStyles } from "./setting-styles";
+import { useWebSocket } from "@/context/websocket-context";
 
 interface AgentProps {
   onSave?: (callback: () => void) => () => void;
@@ -54,6 +56,7 @@ const runtimes = [
 
 function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
   const { t } = useTranslation();
+  const { baseUrl, setBaseUrl, wsUrl, setWsUrl } = useWebSocket();
   const {
     settings,
     handleAllowProactiveSpeakChange,
@@ -69,11 +72,17 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
     handleWorkspaceChange,
     addRuntimeProject,
     selectRuntimeProject,
+    loadRuntimeSettings,
     checkRuntimeConnections,
     saveRuntimeSettings,
   } = useAgentSettings({ onSave, onCancel });
   const [projectDialogOpen, setProjectDialogOpen] = useState(false);
   const [projectPath, setProjectPath] = useState("");
+  const [recoveryBaseUrl, setRecoveryBaseUrl] = useState(baseUrl);
+  const [recoveryWsUrl, setRecoveryWsUrl] = useState(wsUrl);
+
+  useEffect(() => setRecoveryBaseUrl(baseUrl), [baseUrl]);
+  useEffect(() => setRecoveryWsUrl(wsUrl), [wsUrl]);
 
   const runtimeKey = (() => {
     if (runtimeSettings.provider === "opencode_llm") return "opencode";
@@ -321,7 +330,18 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
   const executableError =
     "executable_error" in connection ? connection.executable_error : null;
   const modeUnavailable =
-    launchMode === "omlx" && !runtimeCatalog.omlx.base_url;
+    runtimeState === "ready"
+    && launchMode === "omlx"
+    && !runtimeCatalog.omlx.base_url;
+  const runtimeAvailable = available && !modeUnavailable && !runtimeError;
+
+  const applyRecoveryAddress = (): void => {
+    const nextBaseUrl = recoveryBaseUrl.trim().replace(/\/$/, "");
+    const nextWsUrl = recoveryWsUrl.trim();
+    if (nextBaseUrl) setBaseUrl(nextBaseUrl);
+    if (nextWsUrl) setWsUrl(nextWsUrl);
+    if (nextBaseUrl === baseUrl && nextWsUrl === wsUrl) loadRuntimeSettings();
+  };
 
   return (
     <Stack {...settingStyles.common.container} gap="4.5">
@@ -353,7 +373,7 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
         gap="3"
         direction={{ base: "column", sm: "row" }}
         border="1px solid"
-        borderColor={available && !modeUnavailable ? "#28543f" : "#5c3235"}
+        borderColor={runtimeAvailable ? "#28543f" : "#5c3235"}
         borderLeftWidth="3px"
         bg="#12181c"
         borderRadius="7px"
@@ -367,8 +387,8 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
             justify="center"
             width="8"
             height="8"
-            color={available && !modeUnavailable ? "#72d6a2" : "#ef8a90"}
-            bg={available && !modeUnavailable ? "#173226" : "#351e21"}
+            color={runtimeAvailable ? "#72d6a2" : "#ef8a90"}
+            bg={runtimeAvailable ? "#173226" : "#351e21"}
             borderRadius="5px"
             flexShrink="0"
           >
@@ -392,7 +412,7 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
           </Box>
         </Flex>
         <Badge
-          colorPalette={available && !modeUnavailable ? "green" : "red"}
+          colorPalette={runtimeAvailable ? "green" : "red"}
           variant="subtle"
           borderRadius="4px"
           px="2"
@@ -400,7 +420,7 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
           whiteSpace="normal"
           textAlign="center"
         >
-          {available && !modeUnavailable
+          {runtimeAvailable
             ? t("settings.agent.runtime.available")
             : t("settings.agent.runtime.unavailable")}
         </Badge>
@@ -485,8 +505,62 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
         help={t("settings.agent.runtime.showReasoningHelp")}
       />
 
-      {(runtimeError ||
-        connection.error ||
+      {runtimeError && (
+        <Stack
+          gap="3"
+          bg="#17191b"
+          border="1px solid #5a3a3e"
+          borderLeftWidth="3px"
+          borderRadius="7px"
+          px="3.5"
+          py="3"
+        >
+          <Flex align="flex-start" gap="2.5">
+            <Box color="#ef8a90" mt="0.5" flexShrink="0">
+              <HiSignalSlash />
+            </Box>
+            <Box minW="0">
+              <Text color="#f1dadd" fontSize="sm" fontWeight="semibold">
+                {t("settings.agent.runtime.serverOffline")}
+              </Text>
+              <Text color="#b58f94" fontSize="xs" lineHeight="1.55" mt="1">
+                {t("settings.agent.runtime.serverOfflineHelp")}
+              </Text>
+              <Text color="#d48d94" fontSize="2xs" mt="1.5" overflowWrap="anywhere">
+                {runtimeError}
+              </Text>
+            </Box>
+          </Flex>
+          <InputField
+            label={t("settings.agent.runtime.vtuberServerUrl")}
+            value={recoveryBaseUrl}
+            onChange={setRecoveryBaseUrl}
+            placeholder="http://127.0.0.1:12393"
+          />
+          <InputField
+            label={t("settings.agent.runtime.vtuberWebSocketUrl")}
+            value={recoveryWsUrl}
+            onChange={setRecoveryWsUrl}
+            placeholder="ws://127.0.0.1:12393/client-ws"
+          />
+          <Button
+            variant="outline"
+            minHeight="40px"
+            borderColor="#6a454a"
+            color="#f0c4c8"
+            whiteSpace="normal"
+            onClick={applyRecoveryAddress}
+          >
+            <HiArrowPath />
+            {t("settings.agent.runtime.applyAndRetry")}
+          </Button>
+          <Text color="#806b70" fontSize="2xs" lineHeight="1.5">
+            {t("settings.agent.runtime.omlxServerHelp")}
+          </Text>
+        </Stack>
+      )}
+
+      {(connection.error ||
         executableError ||
         (modeUnavailable && runtimeCatalog.omlx.error)) && (
         <Text
@@ -500,8 +574,7 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
           px="3"
           py="2.5"
         >
-          {runtimeError ||
-            connection.error ||
+          {connection.error ||
             executableError ||
             runtimeCatalog.omlx.error}
         </Text>

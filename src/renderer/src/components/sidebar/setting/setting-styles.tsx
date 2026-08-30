@@ -94,9 +94,10 @@ export const settingStyles = {
     drawerContent: {
       bg: '#0d1114',
       color: '#edf1f4',
-      width: 'min(440px, 100vw)',
-      maxWidth: '440px',
+      width: { base: '100vw', md: 'min(440px, 100vw)' },
+      maxWidth: { base: '100vw', md: '440px' },
       height: isElectron ? 'calc(100vh - 30px)' : '100vh',
+      pointerEvents: 'auto',
       borderRight: '1px solid',
       borderColor: '#273039',
       boxShadow: '22px 0 64px rgba(0, 0, 0, 0.48)',
