@@ -35,7 +35,8 @@ function ChatHistoryPanel(): JSX.Element {
     <Box
       h="full"
       overflow="hidden"
-      bg="gray.900"
+      bg="#0d1114"
+      minW="0"
     >
       <Global styles={chatPanelStyles} />
       <MainContainer>
@@ -47,8 +48,12 @@ function ChatHistoryPanel(): JSX.Element {
                 alignItems="center"
                 justifyContent="center"
                 height="100%"
-                color="whiteAlpha.500"
+                color="#78838d"
                 fontSize="sm"
+                lineHeight="1.55"
+                textAlign="center"
+                overflowWrap="anywhere"
+                px="6"
               >
                 {t('sidebar.noMessages')}
               </Box>
@@ -59,18 +64,23 @@ function ChatHistoryPanel(): JSX.Element {
                     <Box
                       key={msg.id}
                       ml="12"
-                      mr="4"
+                      mr="3"
                       my="2"
+                      py="2"
                       pl="3"
+                      pr="2"
                       borderLeftWidth="2px"
-                      borderColor="whiteAlpha.300"
+                      borderColor="#5f7f99"
+                      bg="#11171b"
+                      borderRightRadius="6px"
+                      minW="0"
                     >
                       <Flex align="center" gap="2" mb={msg.content ? "1" : "0"}>
                         {msg.status === 'running' && (
-                          <Spinner size="xs" color="whiteAlpha.500" />
+                          <Spinner size="xs" color="#7f91a0" />
                         )}
                         <Text
-                          color="whiteAlpha.500"
+                          color="#7f91a0"
                           fontSize="2xs"
                           fontWeight="semibold"
                           textTransform="uppercase"
@@ -82,11 +92,13 @@ function ChatHistoryPanel(): JSX.Element {
                       </Flex>
                       {msg.content && (
                         <Text
-                          color="whiteAlpha.700"
+                          color="#aeb8c0"
                           fontSize="xs"
                           lineHeight="1.65"
                           whiteSpace="pre-wrap"
                           overflowWrap="anywhere"
+                          wordBreak="break-word"
+                          minW="0"
                         >
                           {msg.content}
                         </Text>

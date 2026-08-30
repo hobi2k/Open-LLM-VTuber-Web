@@ -30,24 +30,30 @@ function HelpIcon({ content }: HelpIconProps): JSX.Element {
   return (
     <Tooltip
       showArrow
-      content={
+      content={(
         <Text fontSize="sm" maxW="300px" lineHeight="1.4">
           {content}
         </Text>
-      }
+      )}
       open={isHovering}
     >
       <Box
         as={HiQuestionMarkCircle}
-        color="gray.400"
-        _hover={{ color: 'gray.600' }}
+        aria-label={content}
+        role="img"
+        tabIndex={0}
+        color="#7f8a94"
+        _hover={{ color: '#b7c1ca' }}
         cursor="help"
         w="16px"
         h="16px"
         ml="2"
+        flexShrink="0"
         transition="color 0.2s"
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
+        onFocus={handleMouseEnter}
+        onBlur={handleMouseLeave}
       />
     </Tooltip>
   );
@@ -98,8 +104,13 @@ export function SelectField({
 }: SelectFieldProps): JSX.Element {
   return (
     <Field
-      {...settingStyles.general.field}
-      label={<Text {...settingStyles.general.field.label}>{label}</Text>}
+      width="full"
+      minWidth="0"
+      label={(
+        <Text {...settingStyles.common.fieldLabel} width="full">
+          {label}
+        </Text>
+      )}
     >
       <SelectRoot
         {...settingStyles.general.select.root}
@@ -107,12 +118,32 @@ export function SelectField({
         value={value}
         onValueChange={(e) => onChange(e.value)}
       >
-        <SelectTrigger {...settingStyles.general.select.trigger}>
+        <SelectTrigger
+          {...settingStyles.general.select.trigger}
+          minHeight="40px"
+          bg="#12181d"
+          borderColor="#2b343c"
+        >
           <SelectValueText placeholder={placeholder} />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent
+          bg="#11171b"
+          borderColor="#2c363f"
+          borderRadius="7px"
+          color="#d7dde2"
+          maxW="calc(100vw - 32px)"
+        >
           {collection.items.map((item) => (
-            <SelectItem key={item.value} item={item}>
+            <SelectItem
+              key={item.value}
+              item={item}
+              minHeight="38px"
+              height="auto"
+              py="2"
+              lineHeight="1.4"
+              whiteSpace="normal"
+              overflowWrap="anywhere"
+            >
               {item.label}
             </SelectItem>
           ))}
@@ -134,13 +165,14 @@ export function NumberField({
 }: NumberFieldProps): JSX.Element {
   return (
     <Field
-      {...settingStyles.common.field}
-      label={
-        <Flex align="center">
+      width="full"
+      minWidth="0"
+      label={(
+        <Flex align="center" minWidth="0">
           <Text {...settingStyles.common.fieldLabel}>{label}</Text>
           {help && <HelpIcon content={help} />}
         </Flex>
-      }
+      )}
     >
       <NumberInput.Root
         {...settingStyles.common.numberInput.root}
@@ -165,15 +197,27 @@ export function SwitchField({ label, checked, onChange, help }: SwitchFieldProps
   return (
     <Field
       {...settingStyles.common.field}
-      label={
-        <Flex align="center">
-          <Text {...settingStyles.common.fieldLabel}>{label}</Text>
+      width="full"
+      css={{
+        '& > label': {
+          flex: 1,
+          minWidth: 0,
+          margin: 0,
+        },
+      }}
+      label={(
+        <Flex align="center" minWidth="0" width="full">
+          <Text {...settingStyles.common.fieldLabel} flex="1" minWidth="0">
+            {label}
+          </Text>
           {help && <HelpIcon content={help} />}
         </Flex>
-      }
+      )}
     >
       <Switch
         {...settingStyles.common.switch}
+        aria-label={label}
+        flexShrink="0"
         checked={checked}
         onCheckedChange={(details) => onChange(details.checked)}
       />
@@ -190,20 +234,33 @@ export function InputField({
 }: InputFieldProps): JSX.Element {
   return (
     <Field
-      {...settingStyles.general.field}
-      label={
-        <Flex align="center">
-          <Text {...settingStyles.general.field.label}>{label}</Text>
+      width="full"
+      minWidth="0"
+      label={(
+        <Flex align="center" minWidth="0">
+          <Text {...settingStyles.common.fieldLabel}>{label}</Text>
           {help && <HelpIcon content={help} />}
         </Flex>
-      }
+      )}
     >
       <Input
         {...settingStyles.general.input}
+        title={value}
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
       />
+      {value.length > 48 && (
+        <Text
+          color="#7f8a94"
+          fontSize="2xs"
+          lineHeight="1.45"
+          overflowWrap="anywhere"
+          width="full"
+        >
+          {value}
+        </Text>
+      )}
     </Field>
   );
 }

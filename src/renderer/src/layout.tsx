@@ -7,34 +7,32 @@ const getAppHeight = () => {
   return isElectron ? 'calc(100vh - 30px)' : '100vh';
 };
 
-
-
 export const layoutStyles = {
   appContainer: {
     width: '100vw',
     height: getAppHeight(),
-    bg: 'gray.900',
-    color: 'white',
+    bg: '#0b0f12',
+    color: '#eef2f5',
     overflow: 'hidden',
     position: 'relative',
     display: 'flex',
-    flexDirection: { base: 'column', md: 'row' },
+    flexDirection: 'row',
     mt: isElectron ? '30px' : '0',
   },
   sidebar: {
     position: 'relative' as const,
-    width: { base: '100%', md: '440px' },
-    height: { base: 'auto', md: '100%' },
-    bg: 'gray.800',
+    width: 'min(440px, 100vw)',
+    height: '100%',
+    bg: '#0d1114',
     borderRight: '1px solid',
-    borderColor: 'whiteAlpha.200',
+    borderColor: '#273039',
     overflow: 'hidden',
     flexShrink: 0,
     transition: 'all 0.2s',
   },
   mainContent: {
     flex: 1,
-    height: { base: 'calc(100% - 120px)', md: '100%' },
+    height: '100%',
     position: 'relative',
     display: 'flex',
     flexDirection: 'column',
@@ -97,7 +95,7 @@ export const layoutStyles = {
     alignItems: 'center',
     justifyContent: 'space-between',
     height: '30px',
-    backgroundColor: 'gray.800',
+    backgroundColor: '#101519',
     paddingX: '10px',
     zIndex: 1000,
     css: { '-webkit-app-region': 'drag' },
@@ -111,7 +109,8 @@ export const layoutStyles = {
     alignItems: 'center',
     justifyContent: 'center',
     height: '30px',
-    backgroundColor: 'gray.800',
+    backgroundColor: '#101519',
+    borderBottom: '1px solid #20282e',
     zIndex: 1000,
     css: {
       '-webkit-app-region': 'drag',
@@ -120,7 +119,7 @@ export const layoutStyles = {
   },
   titleBarTitle: {
     fontSize: 'sm',
-    color: 'whiteAlpha.800',
+    color: '#aeb7bf',
     textAlign: 'center',
   },
   titleBarButtons: {

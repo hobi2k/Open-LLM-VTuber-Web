@@ -12,7 +12,7 @@
       "live2d": "Live2D",
       "asr": "ASR",
       "tts": "TTS",
-      "agent": "Agent",
+      "agent": "AI Runtime",
       "about": "About"
     },
     "general": {
@@ -128,6 +128,9 @@
     "noMessages": "No messages yet. Start a conversation!",
     "thinking": "Thinking",
     "reasoning": "Reasoning",
+    "changeMode": "Change mode",
+    "windowMode": "Live mode",
+    "petMode": "Pet mode",
     "noBrowserSession": "No active browser session",
     "browserSession": "Browser Session"
   },

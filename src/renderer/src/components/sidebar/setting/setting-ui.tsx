@@ -13,6 +13,14 @@ import {
 } from "@chakra-ui/react";
 import { useState, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import {
+  HiAdjustmentsHorizontal,
+  HiCommandLine,
+  HiInformationCircle,
+  HiMicrophone,
+  HiSpeakerWave,
+  HiUser,
+} from "react-icons/hi2";
 import { CloseButton } from "@/components/ui/close-button";
 
 import { settingStyles } from "./setting-styles";
@@ -94,7 +102,7 @@ function SettingUI({ open, onClose }: SettingUIProps): JSX.Element {
       onOpenChange={(e) => (e.open ? null : onClose())}
       placement="start"
     >
-      <DrawerBackdrop />
+      <DrawerBackdrop bg="rgba(3, 6, 8, 0.58)" backdropFilter="blur(3px)" />
       <DrawerContent {...settingStyles.settingUI.drawerContent}>
         <DrawerHeader {...settingStyles.settingUI.drawerHeader}>
           <DrawerTitle {...settingStyles.settingUI.drawerTitle}>
@@ -119,36 +127,42 @@ function SettingUI({ open, onClose }: SettingUIProps): JSX.Element {
                 value="general"
                 {...settingStyles.settingUI.tabs.trigger}
               >
+                <HiAdjustmentsHorizontal />
                 {t("settings.tabs.general")}
               </Tabs.Trigger>
               <Tabs.Trigger
                 value="live2d"
                 {...settingStyles.settingUI.tabs.trigger}
               >
+                <HiUser />
                 {t("settings.tabs.live2d")}
               </Tabs.Trigger>
               <Tabs.Trigger
                 value="asr"
                 {...settingStyles.settingUI.tabs.trigger}
               >
+                <HiMicrophone />
                 {t("settings.tabs.asr")}
               </Tabs.Trigger>
               <Tabs.Trigger
                 value="tts"
                 {...settingStyles.settingUI.tabs.trigger}
               >
+                <HiSpeakerWave />
                 {t("settings.tabs.tts")}
               </Tabs.Trigger>
               <Tabs.Trigger
                 value="agent"
                 {...settingStyles.settingUI.tabs.trigger}
               >
+                <HiCommandLine />
                 {t("settings.tabs.agent")}
               </Tabs.Trigger>
               <Tabs.Trigger
                 value="about"
                 {...settingStyles.settingUI.tabs.trigger}
               >
+                <HiInformationCircle />
                 {t("settings.tabs.about")}
               </Tabs.Trigger>
             </Tabs.List>
@@ -158,10 +172,24 @@ function SettingUI({ open, onClose }: SettingUIProps): JSX.Element {
         </DrawerBody>
 
         <DrawerFooter {...settingStyles.settingUI.drawerFooter}>
-          <Button variant="ghost" borderRadius="5px" onClick={handleCancel}>
+          <Button
+            variant="ghost"
+            borderRadius="5px"
+            minHeight="40px"
+            color="#aeb7bf"
+            _hover={{ bg: "#1d242a", color: "#f4f7fa" }}
+            onClick={handleCancel}
+          >
             {t("common.cancel")}
           </Button>
-          <Button colorPalette="blue" borderRadius="5px" onClick={handleSave}>
+          <Button
+            borderRadius="5px"
+            minHeight="40px"
+            bg="#dbeaff"
+            color="#101820"
+            _hover={{ bg: "#edf5ff" }}
+            onClick={handleSave}
+          >
             {t("common.save")}
           </Button>
         </DrawerFooter>

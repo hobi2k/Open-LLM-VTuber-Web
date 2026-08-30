@@ -1,9 +1,10 @@
 /* eslint-disable react/require-default-props */
 import { Box, Button, Menu } from '@chakra-ui/react';
 import {
-  FiSettings, FiClock, FiPlus, FiChevronLeft, FiUsers, FiLayers
+  FiSettings, FiClock, FiPlus, FiChevronLeft, FiUsers, FiLayers,
 } from 'react-icons/fi';
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { sidebarStyles } from './sidebar-styles';
 import SettingUI from './setting/setting-ui';
 import ChatHistoryPanel from './chat-history-panel';
@@ -49,73 +50,108 @@ const ModeMenu = memo(({ setMode, currentMode, isElectron }: {
   setMode: (mode: ModeType) => void
   currentMode: ModeType
   isElectron: boolean
-}) => (
-  <Menu.Root>
-    <Menu.Trigger as={Button} aria-label="Mode Menu" title="Change Mode">
-      <FiLayers />
-    </Menu.Trigger>
-    <Menu.Positioner>
-      <Menu.Content>
-        <Menu.RadioItemGroup value={currentMode}>
-          <Menu.RadioItem value="window" onClick={() => setMode('window')}>
-            <Menu.ItemIndicator />
-            Live Mode
-          </Menu.RadioItem>
-          <Menu.RadioItem 
-            value="pet" 
-            onClick={() => {
-              if (isElectron) {
-                setMode('pet');
-              }
-            }}
-            disabled={!isElectron}
-            title={!isElectron ? "Pet mode is only available in desktop app" : undefined}
-          >
-            <Menu.ItemIndicator />
-            Pet Mode
-          </Menu.RadioItem>
-        </Menu.RadioItemGroup>
-      </Menu.Content>
-    </Menu.Positioner>
-  </Menu.Root>
-));
+}) => {
+  const { t } = useTranslation();
+  return (
+    <Menu.Root>
+      <Menu.Trigger
+        as={Button}
+        {...sidebarStyles.sidebar.headerButton}
+        aria-label={t('sidebar.changeMode')}
+        title={t('sidebar.changeMode')}
+      >
+        <FiLayers />
+      </Menu.Trigger>
+      <Menu.Positioner>
+        <Menu.Content
+          bg="#11171b"
+          borderColor="#2c363f"
+          borderRadius="7px"
+          color="#d7dde2"
+          maxW="calc(100vw - 24px)"
+        >
+          <Menu.RadioItemGroup value={currentMode}>
+            <Menu.RadioItem value="window" onClick={() => setMode('window')}>
+              <Menu.ItemIndicator />
+              {t('sidebar.windowMode')}
+            </Menu.RadioItem>
+            <Menu.RadioItem
+              value="pet"
+              onClick={() => {
+                if (isElectron) {
+                  setMode('pet');
+                }
+              }}
+              disabled={!isElectron}
+            >
+              <Menu.ItemIndicator />
+              {t('sidebar.petMode')}
+            </Menu.RadioItem>
+          </Menu.RadioItemGroup>
+        </Menu.Content>
+      </Menu.Positioner>
+    </Menu.Root>
+  );
+});
 
 ModeMenu.displayName = 'ModeMenu';
 
-const HeaderButtons = memo(({ onSettingsOpen, onNewHistory, setMode, currentMode, isElectron }: HeaderButtonsProps) => (
-  <Box display="flex" gap={1}>
-    <Button onClick={onSettingsOpen}>
-      <FiSettings />
-    </Button>
-
-    <GroupDrawer>
-      <Button>
-        <FiUsers />
+const HeaderButtons = memo(({ onSettingsOpen, onNewHistory, setMode, currentMode, isElectron }: HeaderButtonsProps) => {
+  const { t } = useTranslation();
+  return (
+    <Box display="flex" alignItems="center" width="full" gap={1.5}>
+      <Button
+        {...sidebarStyles.sidebar.headerButton}
+        aria-label={t('common.settings')}
+        title={t('common.settings')}
+        onClick={onSettingsOpen}
+      >
+        <FiSettings />
       </Button>
-    </GroupDrawer>
 
-    <HistoryDrawer>
-      <Button>
-        <FiClock />
+      <GroupDrawer>
+        <Button
+          {...sidebarStyles.sidebar.headerButton}
+          aria-label={t('group.management')}
+          title={t('group.management')}
+        >
+          <FiUsers />
+        </Button>
+      </GroupDrawer>
+
+      <HistoryDrawer>
+        <Button
+          {...sidebarStyles.sidebar.headerButton}
+          aria-label={t('history.chatHistoryList')}
+          title={t('history.chatHistoryList')}
+        >
+          <FiClock />
+        </Button>
+      </HistoryDrawer>
+
+      <Button
+        {...sidebarStyles.sidebar.headerButton}
+        aria-label={t('settings.agent.runtime.newConversation')}
+        title={t('settings.agent.runtime.newConversation')}
+        onClick={onNewHistory}
+      >
+        <FiPlus />
       </Button>
-    </HistoryDrawer>
 
-    <Button onClick={onNewHistory}>
-      <FiPlus />
-    </Button>
-
-    <ModeMenu setMode={setMode} currentMode={currentMode} isElectron={isElectron} />
-  </Box>
-));
+      <Box width="1px" height="22px" bg="#2b343c" mx="0.5" />
+      <ModeMenu setMode={setMode} currentMode={currentMode} isElectron={isElectron} />
+    </Box>
+  );
+});
 
 HeaderButtons.displayName = 'HeaderButtons';
 
-const SidebarContent = memo(({ 
-  onSettingsOpen, 
-  onNewHistory, 
-  setMode, 
+const SidebarContent = memo(({
+  onSettingsOpen,
+  onNewHistory,
+  setMode,
   currentMode,
-  isElectron
+  isElectron,
 }: HeaderButtonsProps) => (
   <Box {...sidebarStyles.sidebar.content}>
     <Box {...sidebarStyles.sidebar.header}>

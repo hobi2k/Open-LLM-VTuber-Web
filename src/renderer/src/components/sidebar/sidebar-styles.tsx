@@ -18,9 +18,9 @@ const commonStyles = {
   },
   panel: {
     border: '1px solid',
-    borderColor: 'whiteAlpha.200',
-    borderRadius: 'lg',
-    bg: 'blackAlpha.400',
+    borderColor: '#273039',
+    borderRadius: '7px',
+    bg: '#11171b',
   },
   title: {
     fontSize: 'lg',
@@ -37,17 +37,17 @@ export const sidebarStyles = {
       left: 0,
       top: 0,
       height: '100%',
-      width: '440px',
-      bg: 'gray.900',
+      width: 'min(440px, 100vw)',
+      bg: '#0d1114',
       transform: isCollapsed
         ? 'translateX(calc(-100% + 24px))'
         : 'translateX(0)',
       transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
       display: 'flex',
       flexDirection: 'column' as const,
-      gap: 4,
+      gap: 0,
       overflow: isCollapsed ? 'visible' : 'hidden',
-      pb: '4',
+      pb: '3',
     }),
     toggleButton: {
       position: 'absolute',
@@ -59,9 +59,10 @@ export const sidebarStyles = {
       alignItems: 'center',
       justifyContent: 'center',
       cursor: 'pointer',
-      color: 'whiteAlpha.700',
-      _hover: { color: 'white' },
-      bg: 'transparent',
+      color: '#8e99a3',
+      _hover: { color: '#eef2f5', bg: '#20282e' },
+      bg: '#151b20',
+      borderLeft: '1px solid #273039',
       transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
       zIndex: 1,
     },
@@ -70,7 +71,7 @@ export const sidebarStyles = {
       width: '100%',
       display: 'flex',
       flexDirection: 'column' as const,
-      gap: 4,
+      gap: 3,
       overflow: 'hidden',
     },
     header: {
@@ -78,7 +79,31 @@ export const sidebarStyles = {
       display: 'flex',
       alignItems: 'center',
       gap: 1,
-      p: 2,
+      px: 4,
+      py: 3,
+      borderBottom: '1px solid',
+      borderColor: '#20282e',
+      bg: '#101519',
+    },
+    headerButton: {
+      variant: 'ghost' as const,
+      minWidth: '36px',
+      width: '36px',
+      height: '36px',
+      p: 0,
+      flexShrink: 0,
+      borderRadius: '5px',
+      color: '#a8b1b9',
+      border: '1px solid transparent',
+      _hover: {
+        color: '#f2f5f7',
+        bg: '#20282e',
+        borderColor: '#303b44',
+      },
+      _focusVisible: {
+        outline: '2px solid #77a8ff',
+        outlineOffset: '1px',
+      },
     },
   },
 
@@ -86,15 +111,15 @@ export const sidebarStyles = {
     container: {
       flex: 1,
       overflow: 'hidden',
-      px: 4,
+      px: 3,
       display: 'flex',
       flexDirection: 'column',
     },
     title: commonStyles.title,
     messageList: {
       ...commonStyles.panel,
-      p: 4,
-      width: '97%',
+      p: 0,
+      width: '100%',
       flex: 1,
       overflowY: 'auto',
       css: {
@@ -152,6 +177,8 @@ export const sidebarStyles = {
     text: {
       fontSize: 'xs',
       color: 'whiteAlpha.900',
+      whiteSpace: 'pre-wrap',
+      overflowWrap: 'anywhere',
     },
     dot: {
       position: 'absolute',
@@ -343,8 +370,8 @@ export const sidebarStyles = {
 
   bottomTab: {
     container: {
-      width: '97%',
-      px: 4,
+      width: '100%',
+      px: 3,
       position: 'relative' as const,
       zIndex: 0,
     },
@@ -356,23 +383,38 @@ export const sidebarStyles = {
     },
     list: {
       borderBottom: 'none',
-      gap: '2',
+      display: 'grid',
+      gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+      gap: '1',
+      width: '100%',
+      p: '1',
+      bg: '#11171b',
+      border: '1px solid #273039',
+      borderRadius: '7px',
     },
     trigger: {
-      color: 'whiteAlpha.700',
+      color: '#8f9aa4',
       display: 'flex',
       alignItems: 'center',
+      justifyContent: 'center',
       gap: 2,
-      px: 3,
+      minWidth: 0,
+      minHeight: '38px',
+      px: 2,
       py: 2,
-      borderRadius: 'md',
+      lineHeight: '1.3',
+      whiteSpace: 'normal',
+      overflowWrap: 'anywhere',
+      textAlign: 'center',
+      borderRadius: '5px',
       _hover: {
-        color: 'white',
-        bg: 'whiteAlpha.50',
+        color: '#eef2f5',
+        bg: '#1d252b',
       },
       _selected: {
-        color: 'white',
-        bg: 'whiteAlpha.200',
+        color: '#eef2f5',
+        bg: '#29343d',
+        boxShadow: 'inset 0 0 0 1px rgba(148, 179, 211, 0.2)',
       },
     },
   },
@@ -444,14 +486,16 @@ export const sidebarStyles = {
   // Add styles for the Tool Call Indicator
   toolCallIndicator: {
     container: {
-      pl: '44px', // Indent to align with message content (avatar width + gap)
-      my: '1', // Reduced vertical margin (e.g., 4px if theme space 1 = 4px)
+      pl: '42px',
+      pr: '10px',
+      my: '1',
       gap: 2,
       width: '100%',
-      minHeight: '24px', // Ensure minimum height
-      display: 'flex', // Ensure display is flex
-      alignItems: 'center', // Keep vertical alignment
-      justifyContent: 'center', // Center items horizontally
+      minWidth: 0,
+      minHeight: '28px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'flex-start',
     },
     icon: {
       color: 'blue.300',
@@ -459,8 +503,10 @@ export const sidebarStyles = {
     },
     text: {
       fontSize: 'xs',
-      color: 'whiteAlpha.700',
-      fontStyle: 'italic',
+      color: '#8f9aa4',
+      lineHeight: '1.45',
+      minWidth: 0,
+      overflowWrap: 'anywhere',
     },
     spinner: {
       size: 'xs',
@@ -482,75 +528,97 @@ export const sidebarStyles = {
 
 export const chatPanelStyles = css`
   .cs-message-list {
-    background: var(--chakra-colors-gray-900) !important;
-    padding: var(--chakra-space-4);
+    background: #0d1114 !important;
+    padding: 8px 10px 16px !important;
+    overflow-x: hidden !important;
   }
-  
+
+  .cs-message-list__scroll-wrapper {
+    overflow-x: hidden !important;
+  }
+
   .cs-message {
-    margin: 12px 0;
-    // padding-top: 20px !important;
+    margin: 14px 0 !important;
+    min-width: 0 !important;
   }
 
   .cs-message__content {
-    background-color: var(--chakra-colors-gray-700) !important;
-    border-radius: var(--chakra-radii-md);
-    padding: 8px !important;
-    color: var(--chakra-colors-white) !important;
-    font-size: 0.95rem !important;
-    line-height: 1.5 !important;
-    margin-top: 4px !important;
+    background-color: #192126 !important;
+    border: 1px solid #29343c !important;
+    border-radius: 7px !important;
+    padding: 10px 12px !important;
+    color: #edf1f4 !important;
+    font-size: 0.875rem !important;
+    line-height: 1.62 !important;
+    margin-top: 5px !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.13);
   }
 
   .cs-message__text {
-    padding: 8px 0 !important;
+    padding: 0 !important;
+    min-width: 0 !important;
+    white-space: pre-wrap !important;
+    overflow-wrap: anywhere !important;
+    word-break: break-word !important;
   }
 
   .cs-message--outgoing .cs-message__content {
-    background-color: var(--chakra-colors-gray-600) !important;
+    background-color: #23302f !important;
+    border-color: #324643 !important;
   }
 
   .cs-chat-container {
     background: transparent !important;
-    border: 1px solid var(--chakra-colors-whiteAlpha-200);
-    border-radius: var(--chakra-radii-lg);
-    padding: var(--chakra-space-2);
+    border: 0 !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
   }
 
   .cs-main-container {
     border: none !important;
     background: transparent !important;
     width: calc(100% - 24px) !important;
+    min-width: 0 !important;
     margin-left: 0 !important;
   }
 
   .cs-message__sender {
-    position: absolute !important;
-    top: 0 !important;
-    left: 36px !important;
-    font-size: 0.875rem !important;
+    position: static !important;
+    display: block !important;
+    max-width: 100% !important;
+    font-size: 0.75rem !important;
     font-weight: 600 !important;
-    color: var(--chakra-colors-whiteAlpha-900) !important;
+    line-height: 1.35 !important;
+    color: #aeb8c0 !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere !important;
   }
 
   .cs-message__content-wrapper {
-    max-width: 80%;
-    margin: 0 8px;
+    max-width: calc(100% - 44px) !important;
+    min-width: 0 !important;
+    margin: 0 7px !important;
   }
 
   .cs-avatar {
-    background-color: var(--chakra-colors-blue-500) !important;
+    background-color: #35658d !important;
     color: white !important;
-    width: 28px !important;
-    height: 28px !important;
-    font-size: 14px !important;
+    width: 30px !important;
+    min-width: 30px !important;
+    height: 30px !important;
+    font-size: 13px !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
     border-radius: 50% !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    overflow: hidden !important;
   }
 
   .cs-message--outgoing .cs-avatar {
-    background-color: var(--chakra-colors-green-500) !important;
+    background-color: #43715f !important;
   }
 
   .cs-message__header {

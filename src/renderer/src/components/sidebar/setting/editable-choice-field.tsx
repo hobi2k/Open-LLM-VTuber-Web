@@ -65,17 +65,30 @@ export function EditableChoiceField({
   return (
     <Field
       width="full"
+      minWidth="0"
       label={(
-        <Flex align="baseline" justify="space-between" width="full" gap="3">
-          <Text color="whiteAlpha.800" fontSize="sm" fontWeight="medium">
+        <Stack width="full" minWidth="0" gap="0.5">
+          <Text
+            color="#d8dee4"
+            fontSize="sm"
+            fontWeight="medium"
+            lineHeight="1.45"
+            overflowWrap="anywhere"
+          >
             {label}
           </Text>
           {help && (
-            <Text color="whiteAlpha.500" fontSize="2xs" truncate>
+            <Text
+              color="#7f8a94"
+              fontSize="2xs"
+              lineHeight="1.45"
+              overflowWrap="anywhere"
+              width="full"
+            >
               {help}
             </Text>
           )}
-        </Flex>
+        </Stack>
       )}
     >
       <Popover.Root
@@ -108,14 +121,18 @@ export function EditableChoiceField({
           >
             <Input
               value={value}
+              title={value}
               placeholder={placeholder}
               disabled={disabled}
-              bg="whiteAlpha.100"
-              borderColor={open ? "blue.400" : "whiteAlpha.200"}
-              _hover={{ borderColor: "whiteAlpha.300", bg: "whiteAlpha.100" }}
+              minHeight="40px"
+              bg="#12181d"
+              borderColor={open ? "#77a8ff" : "#2b343c"}
+              color="#eef2f5"
+              _placeholder={{ color: "#69747e" }}
+              _hover={{ borderColor: "#3a4651", bg: "#171e24" }}
               _focusVisible={{
-                borderColor: "blue.400",
-                boxShadow: "0 0 0 1px var(--chakra-colors-blue-400)",
+                borderColor: "#77a8ff",
+                boxShadow: "0 0 0 1px #77a8ff",
               }}
               onFocus={() => {
                 setFiltering(false);
@@ -136,12 +153,14 @@ export function EditableChoiceField({
         <Portal>
           <Popover.Positioner>
             <Popover.Content
-              bg="#181b1f"
-              borderColor="whiteAlpha.200"
-              borderRadius="6px"
-              boxShadow="0 16px 36px rgba(0, 0, 0, 0.45)"
-              maxH="260px"
+              bg="#11171b"
+              borderColor="#2c363f"
+              borderRadius="7px"
+              boxShadow="0 18px 42px rgba(0, 0, 0, 0.52)"
+              maxH="min(320px, calc(100vh - 64px))"
+              maxW="calc(100vw - 32px)"
               overflowY="auto"
+              overflowX="hidden"
               p="1"
               width="var(--reference-width)"
             >
@@ -160,24 +179,35 @@ export function EditableChoiceField({
                         px="3"
                         py="2"
                         borderRadius="4px"
-                        color={selected ? "blue.100" : "whiteAlpha.800"}
-                        bg={selected ? "blue.900" : "transparent"}
-                        _hover={{ bg: selected ? "blue.800" : "whiteAlpha.100" }}
+                        color={selected ? "#e6f0ff" : "#d7dde2"}
+                        bg={selected ? "#20334a" : "transparent"}
+                        _hover={{ bg: selected ? "#29415d" : "#1b2329" }}
                         onMouseDown={(event) => event.preventDefault()}
                         onClick={() => selectChoice(choice)}
                       >
                         <Flex align="center" width="full" minW="0" gap="2">
                           <Box flex="1" minW="0">
-                            <Text fontSize="sm" truncate>
+                            <Text
+                              fontSize="sm"
+                              lineHeight="1.4"
+                              whiteSpace="normal"
+                              overflowWrap="anywhere"
+                            >
                               {choice.label}
                             </Text>
                             {choice.meta && (
-                              <Text color="whiteAlpha.500" fontSize="2xs" truncate>
+                              <Text
+                                color="#7f8a94"
+                                fontSize="2xs"
+                                lineHeight="1.4"
+                                whiteSpace="normal"
+                                overflowWrap="anywhere"
+                              >
                                 {choice.meta}
                               </Text>
                             )}
                           </Box>
-                          {selected && <HiCheck />}
+                          {selected && <Box as={HiCheck} flexShrink="0" />}
                         </Flex>
                       </Button>
                     );
@@ -192,6 +222,17 @@ export function EditableChoiceField({
           </Popover.Positioner>
         </Portal>
       </Popover.Root>
+      {value.length > 44 && (
+        <Text
+          color="#7f8a94"
+          fontSize="2xs"
+          lineHeight="1.45"
+          overflowWrap="anywhere"
+          width="full"
+        >
+          {value}
+        </Text>
+      )}
     </Field>
   );
 }

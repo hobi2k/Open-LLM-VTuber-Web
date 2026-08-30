@@ -12,7 +12,7 @@
       "live2d": "Live2D",
       "asr": "音声認識",
       "tts": "音声合成",
-      "agent": "AI",
+      "agent": "AIランタイム",
       "about": "情報"
     },
     "general": {
@@ -128,6 +128,9 @@
     "noMessages": "まだメッセージがありません。会話を始めましょう。",
     "thinking": "思考中",
     "reasoning": "推論",
+    "changeMode": "モードを変更",
+    "windowMode": "ライブモード",
+    "petMode": "ペットモード",
     "noBrowserSession": "有効なブラウザーセッションがありません",
     "browserSession": "ブラウザーセッション"
   },

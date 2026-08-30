@@ -47,7 +47,7 @@ interface AgentProps {
 
 const runtimes = [
   { label: "OpenCode", value: "opencode_llm" },
-  { label: "Claude", value: "claude_code_llm" },
+  { label: "Claude Code", value: "claude_code_llm" },
   { label: "Codex", value: "codex_cli_llm" },
   { label: "Hermes", value: "hermes_cli_llm" },
 ];
@@ -324,7 +324,7 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
     launchMode === "omlx" && !runtimeCatalog.omlx.base_url;
 
   return (
-    <Stack {...settingStyles.common.container} gap="5">
+    <Stack {...settingStyles.common.container} gap="4.5">
       <SwitchField
         label={t("settings.agent.allowProactiveSpeak")}
         checked={settings.allowProactiveSpeak}
@@ -345,35 +345,46 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
         checked={settings.allowButtonTrigger}
         onChange={handleAllowButtonTriggerChange}
       />
-      <Separator borderColor="whiteAlpha.200" />
+      <Separator borderColor="#273038" />
 
       <Flex
-        align="center"
+        align={{ base: "flex-start", sm: "center" }}
         justify="space-between"
         gap="3"
-        borderLeftWidth="2px"
-        borderLeftColor={available && !modeUnavailable ? "green.400" : "red.400"}
-        pl="3"
-        py="1"
+        direction={{ base: "column", sm: "row" }}
+        border="1px solid"
+        borderColor={available && !modeUnavailable ? "#28543f" : "#5c3235"}
+        borderLeftWidth="3px"
+        bg="#12181c"
+        borderRadius="7px"
+        px="3.5"
+        py="3"
+        minWidth="0"
       >
-        <Flex align="center" gap="3" minW="0">
+        <Flex align="flex-start" gap="3" minW="0" width="full">
           <Flex
             align="center"
             justify="center"
             width="8"
             height="8"
-            color="blue.200"
-            bg="whiteAlpha.100"
-            borderRadius="4px"
+            color={available && !modeUnavailable ? "#72d6a2" : "#ef8a90"}
+            bg={available && !modeUnavailable ? "#173226" : "#351e21"}
+            borderRadius="5px"
             flexShrink="0"
           >
             <HiCommandLine />
           </Flex>
-          <Box minW="0">
-            <Text fontSize="sm" fontWeight="semibold">
+          <Box minW="0" flex="1">
+            <Text color="#edf1f4" fontSize="sm" fontWeight="semibold" lineHeight="1.35">
               {t("settings.agent.runtime.title")}
             </Text>
-            <Text color="whiteAlpha.600" fontSize="2xs" truncate>
+            <Text
+              color="#84909a"
+              fontSize="2xs"
+              lineHeight="1.45"
+              overflowWrap="anywhere"
+              mt="0.5"
+            >
               {executablePath ||
                 selectedRuntime.connection.version ||
                 runtimeSettings.opencode.base_url}
@@ -385,6 +396,9 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
           variant="subtle"
           borderRadius="4px"
           px="2"
+          flexShrink="0"
+          whiteSpace="normal"
+          textAlign="center"
         >
           {available && !modeUnavailable
             ? t("settings.agent.runtime.available")
@@ -398,17 +412,28 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
           onValueChange={(details) => handleRuntimeProviderChange(details.value as RuntimeProvider)}
           size="sm"
           width="full"
-          bg="whiteAlpha.100"
-          borderRadius="6px"
+          bg="#12181d"
+          border="1px solid"
+          borderColor="#28323a"
+          borderRadius="7px"
           p="1"
         >
-          <SegmentGroup.Indicator borderRadius="4px" bg="whiteAlpha.200" />
+          <SegmentGroup.Indicator
+            borderRadius="5px"
+            bg="#2a3540"
+            boxShadow="inset 0 0 0 1px rgba(148, 179, 211, 0.2)"
+          />
           <SegmentGroup.Items
             items={runtimes}
             fontSize="xs"
-            color="whiteAlpha.800"
+            lineHeight="1.25"
+            minHeight="38px"
+            minWidth="0"
+            color="#c7cfd6"
             flex="1"
             justifyContent="center"
+            whiteSpace="normal"
+            textAlign="center"
           />
         </SegmentGroup.Root>
 
@@ -420,11 +445,13 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
             }}
             size="sm"
             width="full"
-            bg="whiteAlpha.50"
-            borderRadius="6px"
+            bg="#11171b"
+            border="1px solid"
+            borderColor="#252e35"
+            borderRadius="7px"
             p="1"
           >
-            <SegmentGroup.Indicator borderRadius="4px" bg="whiteAlpha.200" />
+            <SegmentGroup.Indicator borderRadius="5px" bg="#273139" />
             <SegmentGroup.Items
               items={[
                 {
@@ -433,9 +460,13 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
                 },
                 { label: "oMLX", value: "omlx" },
               ]}
-              color="whiteAlpha.800"
+              color="#c7cfd6"
+              minHeight="36px"
+              minWidth="0"
               flex="1"
               justifyContent="center"
+              whiteSpace="normal"
+              textAlign="center"
             />
           </SegmentGroup.Root>
         )}
@@ -458,7 +489,17 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
         connection.error ||
         executableError ||
         (modeUnavailable && runtimeCatalog.omlx.error)) && (
-        <Text color="red.300" fontSize="xs" overflowWrap="anywhere">
+        <Text
+          color="#f09aa0"
+          bg="#28191c"
+          borderLeft="2px solid #b85a63"
+          borderRadius="4px"
+          fontSize="xs"
+          lineHeight="1.55"
+          overflowWrap="anywhere"
+          px="3"
+          py="2.5"
+        >
           {runtimeError ||
             connection.error ||
             executableError ||
@@ -507,7 +548,11 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
           variant="outline"
           size="sm"
           minW="9"
+          minH="40px"
           px="2"
+          borderColor="#34404a"
+          color="#cbd3da"
+          _hover={{ bg: "#20282f", borderColor: "#4a5966" }}
           onClick={() => openProjectPicker()}
         >
           <HiFolderPlus />
@@ -527,8 +572,8 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
       <Box
         as="details"
         borderTopWidth="1px"
-        borderColor="whiteAlpha.200"
-        pt="3"
+        borderColor="#273038"
+        pt="3.5"
       >
         <Flex
           as="summary"
@@ -536,8 +581,12 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
           justify="space-between"
           cursor="pointer"
           listStyleType="none"
-          color="whiteAlpha.700"
+          color="#aeb7bf"
           fontSize="sm"
+          fontWeight="medium"
+          lineHeight="1.4"
+          gap="3"
+          overflowWrap="anywhere"
         >
           {t("settings.agent.runtime.advanced")}
           <HiChevronDown />
@@ -590,10 +639,16 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
         </Stack>
       </Box>
 
-      <Flex gap="2">
+      <Flex gap="2" direction={{ base: "column", sm: "row" }}>
         <Button
           flex="1"
           variant="outline"
+          minHeight="42px"
+          borderColor="#34404a"
+          color="#cbd3da"
+          whiteSpace="normal"
+          lineHeight="1.3"
+          _hover={{ bg: "#20282f", borderColor: "#4a5966" }}
           onClick={() => checkRuntimeConnections()}
           disabled={runtimeState === "loading" || runtimeState === "saving"}
         >
@@ -602,7 +657,12 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
         </Button>
         <Button
           flex="1"
-          colorPalette="blue"
+          minHeight="42px"
+          bg="#dbeaff"
+          color="#101820"
+          whiteSpace="normal"
+          lineHeight="1.3"
+          _hover={{ bg: "#edf5ff" }}
           onClick={() => saveRuntimeSettings()}
           disabled={runtimeState === "loading" || runtimeState === "saving"}
         >

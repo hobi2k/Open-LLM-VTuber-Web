@@ -1,4 +1,4 @@
-/* eslint-disable no-shadow */
+/* eslint-disable no-shadow, no-use-before-define */
 // import { StrictMode } from 'react';
 import { Box, Flex, ChakraProvider, defaultSystem } from "@chakra-ui/react";
 import { useState, useEffect, useRef } from "react";
@@ -47,7 +47,6 @@ function AppContent(): JSX.Element {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-    
   document.documentElement.style.overflow = 'hidden';
   document.body.style.overflow = 'hidden';
   document.documentElement.style.height = '100%';
@@ -71,14 +70,8 @@ function AppContent(): JSX.Element {
     top: isElectron ? "30px" : "0px",
     height: `calc(100% - ${isElectron ? "30px" : "0px"})`,
     zIndex: 5, // Ensure it's layered correctly below UI but above background
-    left: {
-      base: "0px", // Column layout (base): Start from left edge
-      md: sidebarVisible ? "440px" : "24px", // Row layout (md+): Offset by sidebar width
-    },
-    width: {
-      base: "100%", // Column layout (base): Full width
-      md: `calc(100% - ${sidebarVisible ? "440px" : "24px"})`, // Row layout (md+): Adjust width based on sidebar
-    },
+    left: sidebarVisible ? "min(440px, 100vw)" : "24px",
+    width: `calc(100% - ${sidebarVisible ? "min(440px, 100vw)" : "24px"})`,
   });
 
   // Define styles specifically for the "pet" mode
@@ -169,36 +162,34 @@ function App(): JSX.Element {
 // New component to access mode for global styles
 function AppWithGlobalStyles(): JSX.Element {
   return (
-    <>
-      <CameraProvider>
-        <ScreenCaptureProvider>
-          <CharacterConfigProvider>
-            <ChatHistoryProvider>
-              <AiStateProvider>
-                <ProactiveSpeakProvider>
-                  <Live2DConfigProvider>
-                    <SubtitleProvider>
-                      <VADProvider>
-                        <BgUrlProvider>
-                          <GroupProvider>
-                            <BrowserProvider>
-                              <WebSocketHandler>
-                                <Toaster />
-                                <AppContent />
-                              </WebSocketHandler>
-                            </BrowserProvider>
-                          </GroupProvider>
-                        </BgUrlProvider>
-                      </VADProvider>
-                    </SubtitleProvider>
-                  </Live2DConfigProvider>
-                </ProactiveSpeakProvider>
-              </AiStateProvider>
-            </ChatHistoryProvider>
-          </CharacterConfigProvider>
-        </ScreenCaptureProvider>
-      </CameraProvider>
-    </>
+    <CameraProvider>
+      <ScreenCaptureProvider>
+        <CharacterConfigProvider>
+          <ChatHistoryProvider>
+            <AiStateProvider>
+              <ProactiveSpeakProvider>
+                <Live2DConfigProvider>
+                  <SubtitleProvider>
+                    <VADProvider>
+                      <BgUrlProvider>
+                        <GroupProvider>
+                          <BrowserProvider>
+                            <WebSocketHandler>
+                              <Toaster />
+                              <AppContent />
+                            </WebSocketHandler>
+                          </BrowserProvider>
+                        </GroupProvider>
+                      </BgUrlProvider>
+                    </VADProvider>
+                  </SubtitleProvider>
+                </Live2DConfigProvider>
+              </ProactiveSpeakProvider>
+            </AiStateProvider>
+          </ChatHistoryProvider>
+        </CharacterConfigProvider>
+      </ScreenCaptureProvider>
+    </CameraProvider>
   );
 }
 
