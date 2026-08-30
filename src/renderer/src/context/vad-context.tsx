@@ -276,14 +276,15 @@ export function VADProvider({ children }: { children: React.ReactNode }) {
    * Initialize new VAD instance
    */
   const initVAD = async () => {
+    const assetBasePath = new URL('./libs/', window.location.href).href;
     const newVAD = await MicVAD.new({
       model: "v5",
       preSpeechPadMs: 20 * 32,
       positiveSpeechThreshold: settings.positiveSpeechThreshold / 100,
       negativeSpeechThreshold: settings.negativeSpeechThreshold / 100,
       redemptionMs: settings.redemptionFrames * 32,
-      baseAssetPath: './libs/',
-      onnxWASMBasePath: './libs/',
+      baseAssetPath: assetBasePath,
+      onnxWASMBasePath: assetBasePath,
       onSpeechStart: handleSpeechStart,
       onSpeechRealStart: handleSpeechRealStart,
       onFrameProcessed: handleFrameProcessed,

@@ -1,7 +1,7 @@
 import { resolve } from 'path';
 import { defineConfig, externalizeDepsPlugin } from 'electron-vite';
 import react from '@vitejs/plugin-react';
-import { viteStaticCopy } from 'vite-plugin-static-copy'
+import { viteStaticCopy } from 'vite-plugin-static-copy';
 import { normalizePath } from 'vite';
 
 export default defineConfig({
@@ -40,13 +40,13 @@ export default defineConfig({
             dest: './libs/',
           },
           {
-            src: normalizePath(resolve(__dirname, 'node_modules/onnxruntime-web/dist/*.wasm')),
+            src: normalizePath(resolve(__dirname, 'node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded*.{mjs,wasm}')),
             dest: './libs/',
           },
           {
             src: normalizePath(resolve(__dirname, 'src/renderer/WebSDK/Core/live2dcubismcore.js')),
-            dest: './libs/'
-          }
+            dest: './libs/',
+          },
         ],
       }),
       react(),
