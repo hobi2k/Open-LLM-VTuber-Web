@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Badge,
   Box,
@@ -142,17 +142,6 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
     "connected" in connection ? connection.connected : connection.available;
   const launchMode = selectedRuntime.launch_mode;
   const interactionMode = selectedRuntime.interaction_mode || "character";
-  const workspaceIdentity = `${runtimeKey}:${normalizeWorkspacePath(
-    selectedRuntime.workspace_directory,
-  )}`;
-  const previousWorkspaceIdentity = useRef(workspaceIdentity);
-
-  useEffect(() => {
-    if (previousWorkspaceIdentity.current === workspaceIdentity) return;
-    previousWorkspaceIdentity.current = workspaceIdentity;
-    setSessionScope("project");
-  }, [workspaceIdentity]);
-
   const selectedProvider = isOpenCode
     ? runtimeSettings.opencode.provider_id
     : runtimeSettings[runtimeKey].provider;
@@ -404,6 +393,11 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
     handleCLISettingChange(runtimeKey, "executable", value);
   };
 
+  const changeWorkspace = (value: string): void => {
+    setSessionScope("project");
+    handleWorkspaceChange(value);
+  };
+
   const changeLaunchMode = (value: string): void => {
     if (value !== "direct" && value !== "omlx") return;
     if (isOpenCode) handleOpenCodeSettingChange("launch_mode", value);
@@ -446,7 +440,7 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
     const session: RuntimeSession | undefined = sessionOptions.find(
       (item) => item.id === sessionId,
     );
-    if (session?.workspace) handleWorkspaceChange(session.workspace);
+    if (session?.workspace) changeWorkspace(session.workspace);
     if (isOpenCode) {
       handleOpenCodeSettingChange("session_id", sessionId);
       return;
@@ -455,7 +449,10 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
   };
 
   const openProjectPicker = async (): Promise<void> => {
-    if (await selectRuntimeProject()) return;
+    if (await selectRuntimeProject()) {
+      setSessionScope("project");
+      return;
+    }
     setProjectPath(selectedRuntime.workspace_directory);
     setProjectDialogOpen(true);
   };
@@ -463,6 +460,7 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
   const addProject = (): void => {
     if (!projectPath.trim()) return;
     addRuntimeProject(projectPath);
+    setSessionScope("project");
     setProjectDialogOpen(false);
   };
 
@@ -547,7 +545,9 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
             >
               {executablePath ||
                 selectedRuntime.connection.version ||
-                runtimeSettings.opencode.base_url}
+                (isOpenCode
+                  ? runtimeSettings.opencode.base_url
+                  : selectedRuntime.executable)}
             </Text>
           </Box>
         </Flex>
@@ -569,7 +569,10 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
       <Stack gap="3">
         <SegmentGroup.Root
           value={runtimeSettings.provider}
-          onValueChange={(details) => handleRuntimeProviderChange(details.value as RuntimeProvider)}
+          onValueChange={(details) => {
+            setSessionScope("all");
+            handleRuntimeProviderChange(details.value as RuntimeProvider);
+          }}
           size="sm"
           width="full"
           bg="#12181d"
@@ -810,7 +813,7 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
           <EditableChoiceField
             label={t("settings.agent.runtime.project")}
             value={selectedRuntime.workspace_directory}
-            onInput={handleWorkspaceChange}
+            onInput={changeWorkspace}
             choices={projectChoices}
             placeholder={t("settings.agent.runtime.selectProject")}
             emptyText={t("settings.agent.runtime.noMatches")}

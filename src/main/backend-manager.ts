@@ -2,7 +2,7 @@ import { spawn, type ChildProcess } from "node:child_process";
 import { createWriteStream, existsSync, mkdirSync } from "node:fs";
 import { createConnection } from "node:net";
 import { homedir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { delimiter, dirname, join, resolve } from "node:path";
 import { app } from "electron";
 
 const BACKEND_HOST = "127.0.0.1";
@@ -86,10 +86,24 @@ export async function startLocalBackend(): Promise<boolean> {
   const logDirectory = app.getPath("logs");
   mkdirSync(logDirectory, { recursive: true });
   const log = createWriteStream(join(logDirectory, "backend.log"), { flags: "a" });
+  const executablePath = [
+    "/opt/homebrew/bin",
+    "/usr/local/bin",
+    "/opt/local/bin",
+    join(homedir(), ".local", "bin"),
+    join(homedir(), ".bun", "bin"),
+    join(homedir(), "Library", "pnpm", "bin"),
+    join(homedir(), ".cargo", "bin"),
+    process.env.PATH,
+  ].filter((value): value is string => Boolean(value)).join(delimiter);
 
   backendProcess = spawn(python, [join(directory, "run_server.py")], {
     cwd: directory,
-    env: { ...process.env, PYTHONUNBUFFERED: "1" },
+    env: {
+      ...process.env,
+      PATH: executablePath,
+      PYTHONUNBUFFERED: "1",
+    },
     stdio: ["ignore", "pipe", "pipe"],
   });
   backendProcess.stdout?.pipe(log);
