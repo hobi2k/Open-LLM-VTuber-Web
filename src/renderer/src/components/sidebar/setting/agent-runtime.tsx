@@ -36,16 +36,8 @@ import {
   RuntimeSession,
   useAgentSettings,
 } from "@/hooks/sidebar/setting/use-agent-settings";
-import {
-  InputField,
-  NumberField,
-  SelectField,
-  SwitchField,
-} from "./common";
-import {
-  EditableChoice,
-  EditableChoiceField,
-} from "./editable-choice-field";
+import { InputField, NumberField, SelectField, SwitchField } from "./common";
+import { EditableChoice, EditableChoiceField } from "./editable-choice-field";
 import { settingStyles } from "./setting-styles";
 import { useWebSocket } from "@/context/websocket-context";
 
@@ -84,7 +76,10 @@ function normalizeWorkspacePath(path: string): string {
   return /^[A-Za-z]:/.test(value) ? value.toLocaleLowerCase() : value;
 }
 
-function workspaceBelongsToProject(workspace: string, project: string): boolean {
+function workspaceBelongsToProject(
+  workspace: string,
+  project: string,
+): boolean {
   const normalizedWorkspace = normalizeWorkspacePath(workspace);
   const normalizedProject = normalizeWorkspacePath(project);
   if (!normalizedWorkspace || !normalizedProject) return false;
@@ -106,6 +101,7 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
     runtimeSettings,
     runtimeCatalog,
     runtimeState,
+    runtimeChecked,
     runtimeError,
     handleRuntimeProviderChange,
     handleOpenCodeSettingChange,
@@ -172,10 +168,7 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
         },
         ...(currentModel ? [currentModel] : []),
         ...filtered,
-      ].map((model) => [
-        `${model.provider}::${model.id}`,
-        model,
-      ]),
+      ].map((model) => [`${model.provider}::${model.id}`, model]),
     );
     return [...values.values()];
   }, [
@@ -224,7 +217,12 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
       if (detected.length) return [...new Set(detected)];
     }
     return ["low", "medium", "high", "xhigh", "max"];
-  }, [modelOptions, runtimeCatalog.models.codex, runtimeKey, selectedRuntime.model]);
+  }, [
+    modelOptions,
+    runtimeCatalog.models.codex,
+    runtimeKey,
+    selectedRuntime.model,
+  ]);
   const selectedReasoningEffort =
     runtimeKey === "claude_code" || runtimeKey === "codex"
       ? runtimeSettings[runtimeKey].reasoning_effort || "default"
@@ -234,9 +232,10 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
       items: ["default" as ReasoningEffort, ...reasoningEffortValues].map(
         (value) => ({
           value,
-          label: value === "default"
-            ? t("settings.agent.runtime.useDefault")
-            : t(`settings.agent.runtime.reasoningEffortLevels.${value}`),
+          label:
+              value === "default"
+                ? t("settings.agent.runtime.useDefault")
+                : t(`settings.agent.runtime.reasoningEffortLevels.${value}`),
         }),
       ),
     }),
@@ -293,16 +292,12 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
     t,
   ]);
   const scopedSessionOptions = useMemo(
-    () => (
-      sessionScope === "all"
-        ? sessionOptions
-        : sessionOptions.filter(
-          (session) => workspaceBelongsToProject(
-            session.workspace,
-            selectedRuntime.workspace_directory,
-          ),
-        )
-    ),
+    () => (sessionScope === "all"
+      ? sessionOptions
+      : sessionOptions.filter((session) => workspaceBelongsToProject(
+        session.workspace,
+        selectedRuntime.workspace_directory,
+      ))),
     [sessionOptions, sessionScope, selectedRuntime.workspace_directory],
   );
   const sessionChoices = useMemo<EditableChoice[]>(
@@ -316,7 +311,11 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
         key: session.id,
         label: session.title,
         value: session.id,
-        meta: [session.source, session.workspace, formatSessionDate(session.updated_at)]
+        meta: [
+          session.source,
+          session.workspace,
+          formatSessionDate(session.updated_at),
+        ]
           .filter(Boolean)
           .join(" · "),
       })),
@@ -341,7 +340,8 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
         key: detectedExecutable.path,
         value: detectedExecutable.path,
         label: detectedExecutable.path,
-        meta: detectedExecutable.version || t("settings.agent.runtime.detected"),
+        meta:
+          detectedExecutable.version || t("settings.agent.runtime.detected"),
       });
     }
     return choices;
@@ -360,10 +360,10 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
     handleCLISettingChange(runtimeKey, "provider", model.provider);
     handleCLISettingChange(runtimeKey, "model", model.id);
     if (
-      runtimeKey === "codex"
-      && model.reasoning_efforts?.length
-      && selectedReasoningEffort !== "default"
-      && !model.reasoning_efforts.includes(selectedReasoningEffort)
+      runtimeKey === "codex" &&
+      model.reasoning_efforts?.length &&
+      selectedReasoningEffort !== "default" &&
+      !model.reasoning_efforts.includes(selectedReasoningEffort)
     ) {
       handleCLISettingChange(runtimeKey, "reasoning_effort", "default");
     }
@@ -468,10 +468,41 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
   const executableError =
     "executable_error" in connection ? connection.executable_error : null;
   const modeUnavailable =
-    runtimeState === "ready"
-    && launchMode === "omlx"
-    && !runtimeCatalog.omlx.base_url;
-  const runtimeAvailable = available && !modeUnavailable && !runtimeError;
+    runtimeChecked && launchMode === "omlx" && !runtimeCatalog.omlx.base_url;
+  const runtimeChecking = runtimeState === "checking";
+  const runtimeAvailable =
+    runtimeChecked && available && !modeUnavailable && !runtimeError;
+  const runtimeUnavailable = runtimeChecked && !runtimeAvailable;
+  const runtimeVisuals = (() => {
+    if (runtimeAvailable) {
+      return {
+        border: "#28543f",
+        icon: "#72d6a2",
+        iconBackground: "#173226",
+        palette: "green" as const,
+      };
+    }
+    if (runtimeUnavailable) {
+      return {
+        border: "#5c3235",
+        icon: "#ef8a90",
+        iconBackground: "#351e21",
+        palette: "red" as const,
+      };
+    }
+    return {
+      border: "#34404a",
+      icon: "#a7b3bd",
+      iconBackground: "#222b32",
+      palette: "gray" as const,
+    };
+  })();
+  const runtimeStatusLabel = (() => {
+    if (runtimeChecking) return t("settings.agent.runtime.searchingRuntimes");
+    if (!runtimeChecked) return t("settings.agent.runtime.notChecked");
+    if (runtimeAvailable) return t("settings.agent.runtime.available");
+    return t("settings.agent.runtime.unavailable");
+  })();
 
   const applyRecoveryAddress = (): void => {
     const nextBaseUrl = recoveryBaseUrl.trim().replace(/\/$/, "");
@@ -511,7 +542,7 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
         gap="3"
         direction={{ base: "column", sm: "row" }}
         border="1px solid"
-        borderColor={runtimeAvailable ? "#28543f" : "#5c3235"}
+        borderColor={runtimeVisuals.border}
         borderLeftWidth="3px"
         bg="#12181c"
         borderRadius="7px"
@@ -525,15 +556,20 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
             justify="center"
             width="8"
             height="8"
-            color={runtimeAvailable ? "#72d6a2" : "#ef8a90"}
-            bg={runtimeAvailable ? "#173226" : "#351e21"}
+            color={runtimeVisuals.icon}
+            bg={runtimeVisuals.iconBackground}
             borderRadius="5px"
             flexShrink="0"
           >
             <HiCommandLine />
           </Flex>
           <Box minW="0" flex="1">
-            <Text color="#edf1f4" fontSize="sm" fontWeight="semibold" lineHeight="1.35">
+            <Text
+              color="#edf1f4"
+              fontSize="sm"
+              fontWeight="semibold"
+              lineHeight="1.35"
+            >
               {t("settings.agent.runtime.title")}
             </Text>
             <Text
@@ -552,7 +588,7 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
           </Box>
         </Flex>
         <Badge
-          colorPalette={runtimeAvailable ? "green" : "red"}
+          colorPalette={runtimeVisuals.palette}
           variant="subtle"
           borderRadius="4px"
           px="2"
@@ -560,9 +596,7 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
           whiteSpace="normal"
           textAlign="center"
         >
-          {runtimeAvailable
-            ? t("settings.agent.runtime.available")
-            : t("settings.agent.runtime.unavailable")}
+          {runtimeStatusLabel}
         </Badge>
       </Flex>
 
@@ -599,6 +633,31 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
             textAlign="center"
           />
         </SegmentGroup.Root>
+
+        <Button
+          width="full"
+          variant="outline"
+          minHeight="42px"
+          borderColor="#3d4b57"
+          color="#dbe5ed"
+          bg="#151c21"
+          whiteSpace="normal"
+          lineHeight="1.3"
+          _hover={{ bg: "#202a31", borderColor: "#5b6c79" }}
+          onClick={() => checkRuntimeConnections()}
+          disabled={
+            runtimeState === "loading" ||
+            runtimeState === "saving" ||
+            runtimeChecking
+          }
+        >
+          <HiArrowPath
+            className={runtimeChecking ? "runtime-scan-spin" : undefined}
+          />
+          {runtimeChecking
+            ? t("settings.agent.runtime.searchingRuntimes")
+            : t("settings.agent.runtime.findRuntimes")}
+        </Button>
 
         {(isOpenCode || isHermes) && (
           <SegmentGroup.Root
@@ -714,7 +773,12 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
               <Text color="#b58f94" fontSize="xs" lineHeight="1.55" mt="1">
                 {t("settings.agent.runtime.serverOfflineHelp")}
               </Text>
-              <Text color="#d48d94" fontSize="2xs" mt="1.5" overflowWrap="anywhere">
+              <Text
+                color="#d48d94"
+                fontSize="2xs"
+                mt="1.5"
+                overflowWrap="anywhere"
+              >
                 {runtimeError}
               </Text>
             </Box>
@@ -748,24 +812,23 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
         </Stack>
       )}
 
-      {(connection.error ||
-        executableError ||
-        (modeUnavailable && runtimeCatalog.omlx.error)) && (
-        <Text
-          color="#f09aa0"
-          bg="#28191c"
-          borderLeft="2px solid #b85a63"
-          borderRadius="4px"
-          fontSize="xs"
-          lineHeight="1.55"
-          overflowWrap="anywhere"
-          px="3"
-          py="2.5"
-        >
-          {connection.error ||
-            executableError ||
-            runtimeCatalog.omlx.error}
-        </Text>
+      {runtimeChecked &&
+        (connection.error ||
+          executableError ||
+          (modeUnavailable && runtimeCatalog.omlx.error)) && (
+          <Text
+            color="#f09aa0"
+            bg="#28191c"
+            borderLeft="2px solid #b85a63"
+            borderRadius="4px"
+            fontSize="xs"
+            lineHeight="1.55"
+            overflowWrap="anywhere"
+            px="3"
+            py="2.5"
+          >
+            {connection.error || executableError || runtimeCatalog.omlx.error}
+          </Text>
       )}
 
       {(isOpenCode || isHermes) && (
@@ -900,17 +963,14 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
               count: scopedSessionOptions.length,
               total: sessionOptions.length,
             }),
-        ].filter(Boolean).join(" · ")}
+        ]
+          .filter(Boolean)
+          .join(" · ")}
         maxVisible={160}
         overflowText={t("settings.agent.runtime.searchAllSessions")}
       />
 
-      <Box
-        as="details"
-        borderTopWidth="1px"
-        borderColor="#273038"
-        pt="3.5"
-      >
+      <Box as="details" borderTopWidth="1px" borderColor="#273038" pt="3.5">
         <Flex
           as="summary"
           align="center"
@@ -935,9 +995,12 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
             choices={executableChoices}
             placeholder={t("settings.agent.runtime.selectExecutable")}
             emptyText={t("settings.agent.runtime.noMatches")}
-            help={selectedRuntime.executable === "auto" && detectedExecutable?.available
-              ? t("settings.agent.runtime.detected")
-              : t("settings.agent.runtime.manual")}
+            help={
+              selectedRuntime.executable === "auto" &&
+              detectedExecutable?.available
+                ? t("settings.agent.runtime.detected")
+                : t("settings.agent.runtime.manual")
+            }
           />
           {isOpenCode && (
             <>
@@ -984,21 +1047,6 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
       <Flex gap="2" direction={{ base: "column", sm: "row" }}>
         <Button
           flex="1"
-          variant="outline"
-          minHeight="42px"
-          borderColor="#34404a"
-          color="#cbd3da"
-          whiteSpace="normal"
-          lineHeight="1.3"
-          _hover={{ bg: "#20282f", borderColor: "#4a5966" }}
-          onClick={() => checkRuntimeConnections()}
-          disabled={runtimeState === "loading" || runtimeState === "saving"}
-        >
-          <HiArrowPath />
-          {t("settings.agent.runtime.refresh")}
-        </Button>
-        <Button
-          flex="1"
           minHeight="42px"
           bg="#dbeaff"
           color="#101820"
@@ -1006,7 +1054,11 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
           lineHeight="1.3"
           _hover={{ bg: "#edf5ff" }}
           onClick={() => saveRuntimeSettings()}
-          disabled={runtimeState === "loading" || runtimeState === "saving"}
+          disabled={
+            runtimeState === "loading" ||
+            runtimeState === "saving" ||
+            runtimeChecking
+          }
         >
           {runtimeState === "saving"
             ? t("settings.agent.runtime.saving")

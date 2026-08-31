@@ -269,16 +269,15 @@ export function useAgentSettings({
     "agentRuntimeCatalog",
     defaultCatalog,
   );
-  const [runtimeSettings, setRuntimeSettings] = useState(
-    cachedRuntimeSettings,
-  );
+  const [runtimeSettings, setRuntimeSettings] = useState(cachedRuntimeSettings);
   const [originalRuntimeSettings, setOriginalRuntimeSettings] = useState(
     cachedRuntimeSettings,
   );
   const [runtimeCatalog, setRuntimeCatalog] = useState(cachedRuntimeCatalog);
   const [runtimeState, setRuntimeState] = useState<
-    "loading" | "ready" | "saving" | "error"
+    "loading" | "ready" | "saving" | "checking" | "error"
   >("loading");
+  const [runtimeChecked, setRuntimeChecked] = useState(false);
   const [runtimeError, setRuntimeError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -290,45 +289,41 @@ export function useAgentSettings({
 
   const loadRuntimeSettings = useCallback(async () => {
     setRuntimeState("loading");
+    setRuntimeChecked(false);
     setRuntimeError(null);
     try {
-      const [settingsResponse, catalogResponse] = await Promise.all([
-        fetch(`${baseUrl}/api/agent-runtime/settings`),
-        fetch(`${baseUrl}/api/agent-runtime/catalog`),
-      ]);
+      const settingsResponse = await fetch(
+        `${baseUrl}/api/agent-runtime/settings`,
+      );
       if (!settingsResponse.ok) {
         throw new Error(
           `Runtime settings request failed (${settingsResponse.status})`,
         );
       }
-      if (!catalogResponse.ok) {
-        throw new Error(
-          `Runtime catalog request failed (${catalogResponse.status})`,
-        );
-      }
       const payload = (await settingsResponse.json()) as AgentRuntimeSettings;
-      const catalog = (await catalogResponse.json()) as RuntimeCatalog;
       setRuntimeSettings(payload);
       setOriginalRuntimeSettings(payload);
-      setRuntimeCatalog(catalog);
       setCachedRuntimeSettings(payload);
-      setCachedRuntimeCatalog(catalog);
       setRuntimeState("ready");
     } catch (error) {
       setRuntimeError(error instanceof Error ? error.message : String(error));
       setRuntimeState("error");
     }
-  }, [baseUrl, setCachedRuntimeCatalog, setCachedRuntimeSettings]);
+  }, [baseUrl, setCachedRuntimeSettings]);
 
   const refreshRuntimeCatalog = useCallback(async () => {
-    const response = await fetch(`${baseUrl}/api/agent-runtime/catalog`);
+    const response = await fetch(`${baseUrl}/api/agent-runtime/catalog`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(settingsRequest(runtimeSettings)),
+    });
     if (!response.ok) {
       throw new Error(`Runtime catalog request failed (${response.status})`);
     }
     const catalog = (await response.json()) as RuntimeCatalog;
     setRuntimeCatalog(catalog);
     setCachedRuntimeCatalog(catalog);
-  }, [baseUrl, setCachedRuntimeCatalog]);
+  }, [baseUrl, runtimeSettings, setCachedRuntimeCatalog]);
 
   useEffect(() => {
     loadRuntimeSettings();
@@ -364,6 +359,9 @@ export function useAgentSettings({
       key: Key,
       value: OpenCodeRuntimeSettings[Key],
     ) => {
+      if (["executable", "base_url", "launch_mode"].includes(key)) {
+        setRuntimeChecked(false);
+      }
       setRuntimeSettings((previous) => ({
         ...previous,
         opencode: { ...previous.opencode, [key]: value },
@@ -381,6 +379,9 @@ export function useAgentSettings({
       key: Key,
       value: CLIRuntimeSettings[Key],
     ) => {
+      if (["executable", "launch_mode", "provider"].includes(key)) {
+        setRuntimeChecked(false);
+      }
       setRuntimeSettings((previous) => ({
         ...previous,
         [runtime]: { ...previous[runtime], [key]: value },
@@ -390,6 +391,7 @@ export function useAgentSettings({
   );
 
   const handleWorkspaceChange = useCallback((path: string) => {
+    setRuntimeChecked(false);
     setRuntimeSettings((previous) => {
       if (previous.provider === "opencode_llm") {
         return {
@@ -457,6 +459,7 @@ export function useAgentSettings({
       });
       if (!response.ok) throw new Error(`Runtime settings update failed (${response.status})`);
       const payload = (await response.json()) as AgentRuntimeSettings;
+      setRuntimeChecked(false);
       setRuntimeSettings(payload);
       setOriginalRuntimeSettings(payload);
       setCachedRuntimeSettings(payload);
@@ -467,7 +470,6 @@ export function useAgentSettings({
         hermes_cli_llm: payload.hermes,
       }[payload.provider];
       if (!selectedRuntime.show_reasoning) clearReasoningMessages();
-      await refreshRuntimeCatalog();
       setRuntimeState("ready");
     } catch (error) {
       setRuntimeError(error instanceof Error ? error.message : String(error));
@@ -477,19 +479,22 @@ export function useAgentSettings({
     baseUrl,
     clearReasoningMessages,
     runtimeSettings,
-    refreshRuntimeCatalog,
     setCachedRuntimeSettings,
   ]);
 
   const checkRuntimeConnections = useCallback(async () => {
-    setRuntimeState("loading");
+    setRuntimeState("checking");
+    setRuntimeChecked(false);
     setRuntimeError(null);
     try {
-      const response = await fetch(`${baseUrl}/api/agent-runtime/check`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(settingsRequest(runtimeSettings)),
-      });
+      const [response] = await Promise.all([
+        fetch(`${baseUrl}/api/agent-runtime/check`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(settingsRequest(runtimeSettings)),
+        }),
+        refreshRuntimeCatalog(),
+      ]);
       if (!response.ok) throw new Error(`Runtime connection check failed (${response.status})`);
       const connections = (await response.json()) as RuntimeConnections;
       setRuntimeSettings((previous) => ({
@@ -502,9 +507,10 @@ export function useAgentSettings({
         codex: { ...previous.codex, connection: connections.codex },
         hermes: { ...previous.hermes, connection: connections.hermes },
       }));
-      await refreshRuntimeCatalog();
+      setRuntimeChecked(true);
       setRuntimeState("ready");
     } catch (error) {
+      setRuntimeChecked(false);
       setRuntimeError(error instanceof Error ? error.message : String(error));
       setRuntimeState("error");
     }
@@ -520,6 +526,7 @@ export function useAgentSettings({
     setTempSettings(originalSettings);
     updateSettings(originalSettings);
     setRuntimeSettings(originalRuntimeSettings);
+    setRuntimeChecked(false);
   }, [originalSettings, originalRuntimeSettings, updateSettings]);
 
   useEffect(() => {
@@ -540,6 +547,7 @@ export function useAgentSettings({
     runtimeSettings,
     runtimeCatalog,
     runtimeState,
+    runtimeChecked,
     runtimeError,
     handleRuntimeProviderChange,
     handleOpenCodeSettingChange,
