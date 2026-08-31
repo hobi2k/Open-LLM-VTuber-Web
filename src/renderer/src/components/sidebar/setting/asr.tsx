@@ -8,15 +8,16 @@ import { useTranslation } from 'react-i18next';
 import { HiMicrophone } from 'react-icons/hi2';
 import { settingStyles } from './setting-styles';
 import { useASRSettings } from '@/hooks/sidebar/setting/use-asr-settings';
-import { useAudioSettings } from '@/hooks/sidebar/setting/use-audio-settings';
+import type { AudioSettingsController } from '@/hooks/sidebar/setting/use-audio-settings';
 import { SwitchField, NumberField } from './common';
 
 interface ASRProps {
   onSave?: (callback: () => void) => () => void
   onCancel?: (callback: () => void) => () => void
+  audioSettings: AudioSettingsController
 }
 
-function ASR({ onSave, onCancel }: ASRProps): JSX.Element {
+function ASR({ onSave, onCancel, audioSettings }: ASRProps): JSX.Element {
   const { t } = useTranslation();
   const {
     localSettings,
@@ -30,10 +31,17 @@ function ASR({ onSave, onCancel }: ASRProps): JSX.Element {
     handleSave,
     handleCancel,
   } = useASRSettings();
-  const { settings: audioSettings, state: audioState, error: audioError } = useAudioSettings();
+  const {
+    settings,
+    state: audioState,
+    error: audioError,
+    changeASREnabled,
+  } = audioSettings;
   const status = (() => {
     if (audioError) return { color: 'red', label: t('settings.asr.offline') };
     if (audioState === 'loading') return { color: 'gray', label: t('settings.asr.loading') };
+    if (!settings.asr.enabled) return { color: 'gray', label: t('settings.asr.off') };
+    if (!settings.asr.loaded) return { color: 'red', label: t('settings.asr.offline') };
     return { color: 'blue', label: t('settings.asr.active') };
   })();
 
@@ -89,16 +97,23 @@ function ASR({ onSave, onCancel }: ASRProps): JSX.Element {
             </Badge>
           </Flex>
           <Text color="#84909a" fontSize="2xs" mt="1" overflowWrap="anywhere">
-            {audioSettings.asr.engine || t('settings.asr.loading')}
-            {audioSettings.asr.model_type ? ` · ${audioSettings.asr.model_type}` : ''}
+            {settings.asr.engine || t('settings.asr.loading')}
+            {settings.asr.model_type ? ` · ${settings.asr.model_type}` : ''}
           </Text>
-          {audioSettings.asr.model && (
+          {settings.asr.model && (
             <Text color="#697680" fontSize="2xs" mt="1" overflowWrap="anywhere">
-              {audioSettings.asr.model}
+              {settings.asr.model}
             </Text>
           )}
         </Box>
       </Flex>
+
+      <SwitchField
+        label={t('settings.asr.enabled')}
+        help={t('settings.asr.enabledDesc')}
+        checked={settings.asr.enabled}
+        onChange={changeASREnabled}
+      />
 
       <SwitchField
         label={t('settings.asr.autoStopMic')}

@@ -8,6 +8,8 @@ interface AudioSettingsProps {
 
 export interface AudioSettings {
   tts: {
+    enabled: boolean;
+    loaded: boolean;
     engine: string;
     available_engines: string[];
     engines: Record<string, {
@@ -20,6 +22,8 @@ export interface AudioSettings {
     model: string | null;
   };
   asr: {
+    enabled: boolean;
+    loaded: boolean;
     engine: string;
     model: string;
     model_type: string | null;
@@ -29,6 +33,8 @@ export interface AudioSettings {
 
 const emptySettings: AudioSettings = {
   tts: {
+    enabled: true,
+    loaded: false,
     engine: "",
     available_engines: [],
     engines: {},
@@ -36,7 +42,14 @@ const emptySettings: AudioSettings = {
     voice_field: null,
     model: null,
   },
-  asr: { engine: "", model: "", model_type: null, device: null },
+  asr: {
+    enabled: true,
+    loaded: false,
+    engine: "",
+    model: "",
+    model_type: null,
+    device: null,
+  },
 };
 
 export function useAudioSettings({ onSave, onCancel }: AudioSettingsProps = {}) {
@@ -86,6 +99,20 @@ export function useAudioSettings({ onSave, onCancel }: AudioSettingsProps = {}) 
     }));
   }, []);
 
+  const changeASREnabled = useCallback((enabled: boolean) => {
+    setSettings((previous) => ({
+      ...previous,
+      asr: { ...previous.asr, enabled },
+    }));
+  }, []);
+
+  const changeTTSEnabled = useCallback((enabled: boolean) => {
+    setSettings((previous) => ({
+      ...previous,
+      tts: { ...previous.tts, enabled },
+    }));
+  }, []);
+
   const saveAudioSettings = useCallback(async () => {
     if (!settings.tts.engine) return;
     setState("saving");
@@ -97,6 +124,8 @@ export function useAudioSettings({ onSave, onCancel }: AudioSettingsProps = {}) 
         body: JSON.stringify({
           engine: settings.tts.engine,
           voice: settings.tts.voice,
+          asr_enabled: settings.asr.enabled,
+          tts_enabled: settings.tts.enabled,
         }),
       });
       if (!response.ok) {
@@ -110,8 +139,15 @@ export function useAudioSettings({ onSave, onCancel }: AudioSettingsProps = {}) 
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : String(saveError));
       setState("error");
+      throw saveError;
     }
-  }, [baseUrl, settings.tts.engine, settings.tts.voice]);
+  }, [
+    baseUrl,
+    settings.asr.enabled,
+    settings.tts.enabled,
+    settings.tts.engine,
+    settings.tts.voice,
+  ]);
 
   const cancelAudioSettings = useCallback(() => {
     setSettings(originalSettings);
@@ -134,6 +170,10 @@ export function useAudioSettings({ onSave, onCancel }: AudioSettingsProps = {}) 
     loadAudioSettings,
     changeTTSEngine,
     changeTTSVoice,
+    changeASREnabled,
+    changeTTSEnabled,
     saveAudioSettings,
   };
 }
+
+export type AudioSettingsController = ReturnType<typeof useAudioSettings>;

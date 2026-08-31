@@ -13,16 +13,15 @@ import {
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { HiArrowPath, HiSpeakerWave } from "react-icons/hi2";
-import { useAudioSettings } from "@/hooks/sidebar/setting/use-audio-settings";
-import { InputField, SelectField } from "./common";
+import type { AudioSettingsController } from "@/hooks/sidebar/setting/use-audio-settings";
+import { InputField, SelectField, SwitchField } from "./common";
 import { settingStyles } from "./setting-styles";
 
 interface TTSProps {
-  onSave?: (callback: () => void) => () => void;
-  onCancel?: (callback: () => void) => () => void;
+  audioSettings: AudioSettingsController;
 }
 
-function TTS({ onSave, onCancel }: TTSProps): JSX.Element {
+function TTS({ audioSettings }: TTSProps): JSX.Element {
   const { t } = useTranslation();
   const {
     settings,
@@ -31,7 +30,8 @@ function TTS({ onSave, onCancel }: TTSProps): JSX.Element {
     loadAudioSettings,
     changeTTSEngine,
     changeTTSVoice,
-  } = useAudioSettings({ onSave, onCancel });
+    changeTTSEnabled,
+  } = audioSettings;
   const engines = useMemo(
     () => createListCollection({
       items: settings.tts.available_engines.map((engine) => ({
@@ -44,6 +44,8 @@ function TTS({ onSave, onCancel }: TTSProps): JSX.Element {
   const status = (() => {
     if (error) return { color: "red", label: t("settings.tts.offline") };
     if (state === "loading") return { color: "gray", label: t("settings.tts.loading") };
+    if (!settings.tts.enabled) return { color: "gray", label: t("settings.tts.off") };
+    if (!settings.tts.loaded) return { color: "red", label: t("settings.tts.offline") };
     return { color: "green", label: t("settings.tts.active") };
   })();
 
@@ -92,6 +94,13 @@ function TTS({ onSave, onCancel }: TTSProps): JSX.Element {
           </Text>
         </Box>
       </Flex>
+
+      <SwitchField
+        label={t("settings.tts.enabled")}
+        help={t("settings.tts.enabledDesc")}
+        checked={settings.tts.enabled}
+        onChange={changeTTSEnabled}
+      />
 
       {error && (
         <Box

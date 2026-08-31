@@ -41,8 +41,11 @@
     "asr": {
       "inputTitle": "语音识别",
       "active": "运行中",
+      "off": "已关闭",
       "offline": "离线",
       "loading": "正在加载音频引擎...",
+      "enabled": "启用语音识别",
+      "enabledDesc": "关闭后会卸载语音识别模型并停止麦克风采集。",
       "autoStopMic": "AI开始说话时自动关闭麦克风",
       "autoStopMicDesc": "当AI开始说话时自动关闭麦克风，防止音频反馈",
       "autoStartMicOnConvEnd": "对话结束时自动开启麦克风",
@@ -59,8 +62,11 @@
     "tts": {
       "outputTitle": "语音输出",
       "active": "运行中",
+      "off": "已关闭",
       "offline": "离线",
       "loading": "正在加载音频引擎...",
+      "enabled": "启用语音输出",
+      "enabledDesc": "关闭后会卸载语音合成引擎，并仅显示文本回复。",
       "engine": "TTS 引擎",
       "selectEngine": "选择 TTS 引擎",
       "voice": "声音",

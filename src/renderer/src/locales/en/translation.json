@@ -41,8 +41,11 @@
     "asr": {
       "inputTitle": "Speech recognition",
       "active": "Active",
+      "off": "Off",
       "offline": "Offline",
       "loading": "Loading audio engine...",
+      "enabled": "Speech recognition",
+      "enabledDesc": "Turn off to unload the speech recognition model and stop microphone capture.",
       "autoStopMic": "Auto Stop Mic When AI Start Speaking",
       "autoStopMicDesc": "Automatically stops microphone when AI begins speaking to prevent audio feedback",
       "autoStartMicOnConvEnd": "Auto Start Mic When Conversation End",
@@ -59,8 +62,11 @@
     "tts": {
       "outputTitle": "Voice output",
       "active": "Active",
+      "off": "Off",
       "offline": "Offline",
       "loading": "Loading audio engine...",
+      "enabled": "Voice output",
+      "enabledDesc": "Turn off to unload the speech engine and continue with text responses only.",
       "engine": "TTS engine",
       "selectEngine": "Select a TTS engine",
       "voice": "Voice",

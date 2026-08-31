@@ -50,6 +50,9 @@ interface VADState {
   /** Stop microphone and VAD */
   stopMic: () => void;
 
+  /** Allow or block microphone/VAD initialization */
+  setASREnabled: (enabled: boolean) => void;
+
   /** Previous speech probability value */
   previousTriggeredProbability: number;
 
@@ -107,6 +110,7 @@ export function VADProvider({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
   // Refs for VAD instance and state
   const vadRef = useRef<MicVAD | null>(null);
+  const asrEnabledRef = useRef(true);
   const previousTriggeredProbabilityRef = useRef(0);
   const previousAiStateRef = useRef<AiState>('idle');
 
@@ -300,6 +304,10 @@ export function VADProvider({ children }: { children: React.ReactNode }) {
    * Start microphone and VAD processing
    */
   const startMic = useCallback(async () => {
+    if (!asrEnabledRef.current) {
+      console.log('ASR is disabled; microphone start skipped');
+      return;
+    }
     try {
       if (!vadRef.current) {
         console.log('Initializing VAD');
@@ -337,6 +345,11 @@ export function VADProvider({ children }: { children: React.ReactNode }) {
     isProcessingRef.current = false;
   }, []);
 
+  const setASREnabled = useCallback((enabled: boolean) => {
+    asrEnabledRef.current = enabled;
+    if (!enabled) stopMic();
+  }, [stopMic]);
+
   /**
    * Set Auto stop mic state
    */
@@ -367,6 +380,7 @@ export function VADProvider({ children }: { children: React.ReactNode }) {
       setAutoStopMic,
       startMic,
       stopMic,
+      setASREnabled,
       previousTriggeredProbability: previousTriggeredProbabilityRef.current,
       setPreviousTriggeredProbability,
       settings,
@@ -380,6 +394,7 @@ export function VADProvider({ children }: { children: React.ReactNode }) {
       micOn,
       startMic,
       stopMic,
+      setASREnabled,
       settings,
       updateSettings,
     ],

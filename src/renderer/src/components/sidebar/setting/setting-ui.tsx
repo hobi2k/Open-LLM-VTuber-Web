@@ -24,6 +24,7 @@ import {
   HiUser,
 } from "react-icons/hi2";
 import { CloseButton } from "@/components/ui/close-button";
+import { useAudioSettings } from "@/hooks/sidebar/setting/use-audio-settings";
 
 import { settingStyles } from "./setting-styles";
 import General from "./general";
@@ -41,33 +42,47 @@ interface SettingUIProps {
 
 function SettingUI({ open, onClose }: SettingUIProps): JSX.Element {
   const { t } = useTranslation();
-  const [saveHandlers, setSaveHandlers] = useState<(() => void)[]>([]);
-  const [cancelHandlers, setCancelHandlers] = useState<(() => void)[]>([]);
+  type SettingsHandler = () => void | Promise<void>;
+  const [saveHandlers, setSaveHandlers] = useState<SettingsHandler[]>([]);
+  const [cancelHandlers, setCancelHandlers] = useState<SettingsHandler[]>([]);
   const [activeTab, setActiveTab] = useState("general");
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleSaveCallback = useCallback((handler: () => void) => {
+  const handleSaveCallback = useCallback((handler: SettingsHandler) => {
     setSaveHandlers((prev) => [...prev, handler]);
     return (): void => {
       setSaveHandlers((prev) => prev.filter((h) => h !== handler));
     };
   }, []);
 
-  const handleCancelCallback = useCallback((handler: () => void) => {
+  const handleCancelCallback = useCallback((handler: SettingsHandler) => {
     setCancelHandlers((prev) => [...prev, handler]);
     return (): void => {
       setCancelHandlers((prev) => prev.filter((h) => h !== handler));
     };
   }, []);
 
-  const handleSave = useCallback((): void => {
-    saveHandlers.forEach((handler) => handler());
-    onClose();
+  const handleSave = useCallback(async (): Promise<void> => {
+    setIsSaving(true);
+    try {
+      await Promise.all(saveHandlers.map((handler) => handler()));
+      onClose();
+    } catch (error) {
+      console.error("Failed to save settings", error);
+    } finally {
+      setIsSaving(false);
+    }
   }, [saveHandlers, onClose]);
 
   const handleCancel = useCallback((): void => {
     cancelHandlers.forEach((handler) => handler());
     onClose();
   }, [cancelHandlers, onClose]);
+
+  const audioSettings = useAudioSettings({
+    onSave: handleSaveCallback,
+    onCancel: handleCancelCallback,
+  });
 
   const tabsContent = useMemo(
     () => (
@@ -82,10 +97,14 @@ function SettingUI({ open, onClose }: SettingUIProps): JSX.Element {
           <Live2D onSave={handleSaveCallback} onCancel={handleCancelCallback} />
         </Tabs.Content>
         <Tabs.Content value="asr" {...settingStyles.settingUI.tabs.content}>
-          <ASR onSave={handleSaveCallback} onCancel={handleCancelCallback} />
+          <ASR
+            onSave={handleSaveCallback}
+            onCancel={handleCancelCallback}
+            audioSettings={audioSettings}
+          />
         </Tabs.Content>
         <Tabs.Content value="tts" {...settingStyles.settingUI.tabs.content}>
-          <TTS onSave={handleSaveCallback} onCancel={handleCancelCallback} />
+          <TTS audioSettings={audioSettings} />
         </Tabs.Content>
         <Tabs.Content value="agent" {...settingStyles.settingUI.tabs.content}>
           <Agent onSave={handleSaveCallback} onCancel={handleCancelCallback} />
@@ -95,7 +114,7 @@ function SettingUI({ open, onClose }: SettingUIProps): JSX.Element {
         </Tabs.Content>
       </Tabs.ContentGroup>
     ),
-    [handleSaveCallback, handleCancelCallback],
+    [handleSaveCallback, handleCancelCallback, audioSettings],
   );
 
   return (
@@ -193,6 +212,7 @@ function SettingUI({ open, onClose }: SettingUIProps): JSX.Element {
                 bg="#dbeaff"
                 color="#101820"
                 _hover={{ bg: "#edf5ff" }}
+                loading={isSaving}
                 onClick={handleSave}
               >
                 {t("common.save")}

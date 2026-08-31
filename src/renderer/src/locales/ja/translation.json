@@ -41,8 +41,11 @@
     "asr": {
       "inputTitle": "音声認識",
       "active": "動作中",
+      "off": "オフ",
       "offline": "オフライン",
       "loading": "音声エンジンを読み込み中...",
+      "enabled": "音声認識を使用",
+      "enabledDesc": "オフにすると音声認識モデルを解放し、マイク入力を停止します。",
       "autoStopMic": "AIの発話開始時にマイクを停止",
       "autoStopMicDesc": "音声の回り込みを防ぐため、AIが話し始めるとマイクを自動停止します",
       "autoStartMicOnConvEnd": "会話終了時にマイクを再開",
@@ -59,8 +62,11 @@
     "tts": {
       "outputTitle": "音声出力",
       "active": "動作中",
+      "off": "オフ",
       "offline": "オフライン",
       "loading": "音声エンジンを読み込み中...",
+      "enabled": "音声出力を使用",
+      "enabledDesc": "オフにすると音声合成エンジンを解放し、テキスト応答のみを表示します。",
       "engine": "TTSエンジン",
       "selectEngine": "TTSエンジンを選択",
       "voice": "音声",

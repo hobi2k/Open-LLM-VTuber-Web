@@ -7,6 +7,7 @@ import {
 import { ModelInfo, useLive2DConfig } from '@/context/live2d-config-context';
 import { useSubtitle } from '@/context/subtitle-context';
 import { audioTaskQueue } from '@/utils/task-queue';
+import { audioManager } from '@/utils/audio-manager';
 import { useAudioTask } from '@/components/canvas/live2d';
 import { useBgUrl } from '@/context/bgurl-context';
 import { useConfig } from '@/context/character-config-context';
@@ -41,7 +42,9 @@ function WebSocketHandler({ children }: { children: React.ReactNode }) {
   const { confUid, setConfName, setConfUid, setConfigFiles } = useConfig();
   const [pendingModelInfo, setPendingModelInfo] = useState<ModelInfo | undefined>(undefined);
   const { setSelfUid, setGroupMembers, setIsOwner } = useGroup();
-  const { startMic, stopMic, autoStartMicOnConvEnd } = useVAD();
+  const {
+    startMic, stopMic, setASREnabled, autoStartMicOnConvEnd,
+  } = useVAD();
   const autoStartMicOnConvEndRef = useRef(autoStartMicOnConvEnd);
   const { interrupt } = useInterrupt();
   const { setBrowserViewData } = useBrowser();
@@ -71,6 +74,23 @@ function WebSocketHandler({ children }: { children: React.ReactNode }) {
         console.log('Stopping microphone...');
         stopMic();
         break;
+      case 'enable-asr':
+        console.log('Enabling speech recognition...');
+        setASREnabled(true);
+        startMic();
+        break;
+      case 'disable-asr':
+        console.log('Disabling speech recognition...');
+        setASREnabled(false);
+        break;
+      case 'enable-tts':
+        console.log('Enabling voice output...');
+        break;
+      case 'disable-tts':
+        console.log('Disabling voice output...');
+        audioTaskQueue.clearQueue();
+        audioManager.stopCurrentAudioAndLipSync();
+        break;
       case 'conversation-chain-start':
         setAiState('thinking-speaking');
         audioTaskQueue.clearQueue();
@@ -98,7 +118,16 @@ function WebSocketHandler({ children }: { children: React.ReactNode }) {
       default:
         console.warn('Unknown control command:', controlText);
     }
-  }, [setAiState, clearResponse, finishRunningReasoning, setSubtitleText, startMic, stopMic, subtitleText]);
+  }, [
+    setAiState,
+    clearResponse,
+    finishRunningReasoning,
+    setSubtitleText,
+    startMic,
+    stopMic,
+    setASREnabled,
+    subtitleText,
+  ]);
 
   const handleWebSocketMessage = useCallback((message: MessageEvent) => {
     console.log('Received message from server:', message);
