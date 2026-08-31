@@ -24,7 +24,7 @@ import {
   Textarea,
 } from '@chakra-ui/react';
 import {
-  useState, useEffect, useCallback, useRef,
+  FormEvent, useState, useEffect, useCallback, useRef,
 } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useInputSubtitle } from '@/hooks/electron/use-input-subtitle';
@@ -44,9 +44,9 @@ function PetTimelineMessage({ message }: { message: Message }): JSX.Element {
   if (message.type === 'reasoning') {
     return (
       <Box {...inputSubtitleStyles.reasoningMessage}>
-        <Flex align="center" gap="2" color="#8ebce0" mb={message.content ? '1.5' : '0'}>
-          {message.status === 'running' ? <Spinner size="xs" /> : <LuBrain size={14} />}
-          <Text fontSize="2xs" fontWeight="semibold">{t('sidebar.reasoning')}</Text>
+        <Flex align="center" gap="2" color="#a9d2ed" mb={message.content ? '1.5' : '0'}>
+          {message.status === 'running' ? <Spinner size="xs" /> : <LuBrain size={15} />}
+          <Text fontSize="xs" fontWeight="semibold">{t('sidebar.reasoning')}</Text>
         </Flex>
         {message.content && <Text {...inputSubtitleStyles.timelineText}>{message.content}</Text>}
       </Box>
@@ -147,6 +147,7 @@ export function InputSubtitle() {
 
   const [isVisible, setIsVisible] = useState(true);
   const timelineRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const handleClose = useCallback(() => {
     if (isPet) {
@@ -188,6 +189,18 @@ export function InputSubtitle() {
     const element = timelineRef.current;
     if (element) element.scrollTop = element.scrollHeight;
   }, [timelineMessages, aiState]);
+
+  useEffect(() => {
+    const input = inputRef.current;
+    if (!input) return;
+    input.style.height = '0px';
+    input.style.height = `${Math.min(Math.max(input.scrollHeight, 58), 132)}px`;
+  }, [inputValue]);
+
+  const handleSubmit = (event: FormEvent) => {
+    event.preventDefault();
+    if (inputValue.trim()) handleSend();
+  };
 
   if (!isVisible) return null;
 
@@ -255,21 +268,25 @@ export function InputSubtitle() {
           )}
         </Box>
 
-        <Box {...inputSubtitleStyles.inputBox}>
+        <Box as="form" onSubmit={handleSubmit} {...inputSubtitleStyles.inputBox}>
           <Flex gap="2" p="2.5" align="flex-end">
             <Textarea
+              ref={inputRef}
               value={inputValue}
               onChange={handleInputChange}
               onKeyDown={handleKeyPress}
               onCompositionStart={handleCompositionStart}
               onCompositionEnd={handleCompositionEnd}
               placeholder={t('footer.typeYourMessage')}
+              aria-label={t('footer.typeYourMessage')}
+              rows={2}
               {...inputSubtitleStyles.input}
             />
             <IconButton
+              type="submit"
               aria-label={t('footer.send')}
               title={t('footer.send')}
-              onClick={handleSend}
+              disabled={!inputValue.trim()}
               {...inputSubtitleStyles.sendButton}
             >
               <LuSend size={16} />

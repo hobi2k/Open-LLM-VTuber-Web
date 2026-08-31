@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { ChangeEvent, KeyboardEvent, useState } from 'react';
 import { useWebSocket } from '@/context/websocket-context';
 import { useAiState } from '@/context/ai-state-context';
 import { useInterrupt } from '@/components/canvas/live2d';
@@ -16,7 +16,9 @@ export function useTextInput() {
   const { stopMic, autoStopMic } = useVAD();
   const { captureAllMedia } = useMediaCapture();
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
     setInputText(e.target.value);
   };
 
@@ -39,7 +41,9 @@ export function useTextInput() {
     setInputText('');
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyPress = (
+    e: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
     if (isComposing) return;
 
     if (e.key === 'Enter' && !e.shiftKey) {

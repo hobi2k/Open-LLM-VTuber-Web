@@ -3,7 +3,7 @@ import { useChatHistory } from '@/context/chat-history-context';
 import { useVAD } from '@/context/vad-context';
 import { useMicToggle } from '@/hooks/utils/use-mic-toggle';
 import { useTextInput } from '@/hooks/footer/use-text-input';
-import { useAiState, AiStateEnum } from '@/context/ai-state-context';
+import { useAiState } from '@/context/ai-state-context';
 import { useInterrupt } from '@/hooks/utils/use-interrupt';
 
 export function useInputSubtitle() {
@@ -20,13 +20,21 @@ export function useInputSubtitle() {
   const { messages } = useChatHistory();
   const { startMic, autoStartMicOn } = useVAD();
   const { handleMicToggle, micOn } = useMicToggle();
-  const { aiState, setAiState } = useAiState();
+  const { aiState } = useAiState();
   const { interrupt } = useInterrupt();
 
-  const timelineMessages = messages
+  const visibleMessages = messages
     .filter((message) => message.type !== 'tool_call_status'
-      && (message.type !== 'text' || Boolean(message.content.trim())))
-    .slice(-16);
+      && (message.type !== 'text' || Boolean(message.content.trim())));
+  const latestHumanIndex = visibleMessages
+    .map((message) => message.role === 'human')
+    .lastIndexOf(true);
+  const activeTurn = latestHumanIndex >= 0
+    ? visibleMessages.slice(latestHumanIndex)
+    : [];
+  const timelineMessages = activeTurn.length >= 80
+    ? activeTurn
+    : visibleMessages.slice(-80);
 
   const handleInterrupt = () => {
     interrupt();
@@ -36,12 +44,11 @@ export function useInputSubtitle() {
   };
 
   const handleInputChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
-    handleChange({ target: { value: e.target.value } } as ChangeEvent<HTMLInputElement>);
-    setAiState(AiStateEnum.WAITING);
+    handleChange(e);
   };
 
   const handleKeyPress = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    handleKey(e as any);
+    handleKey(e);
   };
 
   return {

@@ -4,15 +4,14 @@ export const inputSubtitleStyles = {
   container: {
     display: 'flex',
     alignItems: 'flex-end',
-    justifyContent: 'center',
-    maxW: 'fit-content',
+    justifyContent: 'flex-end',
     position: 'absolute' as const,
-    bottom: '28px',
-    right: '28px',
+    bottom: '24px',
+    right: '24px',
     zIndex: 1000,
     userSelect: 'none',
     willChange: 'transform',
-    width: 'min(480px, calc(100vw - 32px))',
+    width: 'min(520px, calc(100vw - 40px))',
     padding: 0,
   },
 
@@ -31,8 +30,8 @@ export const inputSubtitleStyles = {
     display: 'flex',
     flexDirection: 'column' as const,
     gap: '2.5',
-    minH: '110px',
-    maxH: 'min(360px, 46vh)',
+    minH: '220px',
+    maxH: 'min(520px, 58vh)',
     overflowY: 'auto',
     px: '3',
     py: '3',
@@ -49,7 +48,7 @@ export const inputSubtitleStyles = {
   },
 
   textMessage: (role: 'ai' | 'human'): SystemStyleObject => ({
-    maxW: '88%',
+    maxW: role === 'human' ? '84%' : '92%',
     minW: '0',
     px: '3',
     py: '2.5',
@@ -59,13 +58,19 @@ export const inputSubtitleStyles = {
   }),
 
   reasoningMessage: {
-    borderLeft: '2px solid #527d98',
-    pl: '3',
-    py: '1',
+    alignSelf: 'flex-start',
+    maxW: '94%',
+    border: '1px solid #31576e',
+    borderRadius: '7px 7px 7px 2px',
+    bg: '#142936',
+    px: '3',
+    py: '2.5',
     minW: '0',
   },
 
   activityMessage: {
+    alignSelf: 'flex-start',
+    maxW: '96%',
     border: '1px solid #2a373e',
     borderRadius: '6px',
     bg: '#11191d',
@@ -158,8 +163,8 @@ export const inputSubtitleStyles = {
   },
 
   input: {
-    minH: '42px',
-    maxH: '112px',
+    minH: '58px',
+    maxH: '132px',
     resize: 'none',
     bg: '#0b1114',
     color: '#edf2f4',
@@ -178,13 +183,18 @@ export const inputSubtitleStyles = {
   },
 
   sendButton: {
-    width: '42px',
-    height: '42px',
-    minW: '42px',
+    width: '44px',
+    height: '44px',
+    minW: '44px',
     bg: '#d7e5ec',
     color: '#142027',
     borderRadius: '6px',
     _hover: { bg: '#edf5f8' },
+    _disabled: {
+      bg: '#26343b',
+      color: '#657780',
+      cursor: 'not-allowed',
+    },
   },
 
   draggableContainer: (isDragging: boolean): SystemStyleObject => ({

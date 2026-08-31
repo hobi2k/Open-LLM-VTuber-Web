@@ -12,7 +12,12 @@ import { toaster } from '@/components/ui/toaster';
 import { useWebSocket } from '@/context/websocket-context';
 import { DisplayText } from '@/services/websocket-service';
 import { useLive2DExpression } from '@/hooks/canvas/use-live2d-expression';
-import * as LAppDefine from '../../../WebSDK/src/lappdefine';
+import { useLive2DConfig } from '@/context/live2d-config-context';
+import {
+  detectLive2DReaction,
+  expressionForReaction,
+  playLive2DReaction,
+} from '@/utils/live2d-actions';
 
 interface AudioTaskOptions {
   audioBase64: string
@@ -34,6 +39,7 @@ export const useAudioTask = () => {
   const { appendResponse, appendAIMessage } = useChatHistory();
   const { sendMessage } = useWebSocket();
   const { setExpression } = useLive2DExpression();
+  const { modelInfo } = useLive2DConfig();
 
   // State refs to avoid stale closures
   const stateRef = useRef({
@@ -96,21 +102,29 @@ export const useAudioTask = () => {
     }
 
     try {
+      const live2dManager = (window as any).getLive2DManager?.();
+      const model = live2dManager?.getModel(0);
+      const lappAdapter = (window as any).getLAppAdapter?.();
+      if (displayText && lappAdapter) {
+        const reaction = detectLive2DReaction(displayText.text);
+        const expression = expressions?.[0]
+          ?? expressionForReaction(modelInfo, reaction);
+        if (expression !== undefined) {
+          setExpression(
+            expression,
+            lappAdapter,
+            `Set expression to: ${expression}`,
+          );
+        }
+        playLive2DReaction(lappAdapter, reaction);
+      }
+
       // Process audio if available
       if (audioBase64) {
         const audioDataUrl = `data:audio/wav;base64,${audioBase64}`;
 
-        // Get Live2D manager and model
-        const live2dManager = (window as any).getLive2DManager?.();
-        if (!live2dManager) {
-          console.error('Live2D manager not found');
-          resolve();
-          return;
-        }
-
-        const model = live2dManager.getModel(0);
         if (!model) {
-          console.error('Live2D model not found at index 0');
+          console.error('Live2D model not found for audio playback');
           resolve();
           return;
         }
@@ -120,27 +134,6 @@ export const useAudioTask = () => {
           console.warn('Model does not have _wavFileHandler for lip sync');
         } else {
           console.log('Model has _wavFileHandler available');
-        }
-
-        // Set expression if available
-        const lappAdapter = (window as any).getLAppAdapter?.();
-        if (lappAdapter && expressions?.[0] !== undefined) {
-          setExpression(
-            expressions[0],
-            lappAdapter,
-            `Set expression to: ${expressions[0]}`,
-          );
-        }
-
-        // Start talk motion
-        if (LAppDefine && LAppDefine.PriorityNormal) {
-          console.log("Starting random 'Talk' motion");
-          model.startRandomMotion(
-            "Talk",
-            LAppDefine.PriorityNormal,
-          );
-        } else {
-          console.warn("LAppDefine.PriorityNormal not found - cannot start talk motion");
         }
 
         // Setup audio element
