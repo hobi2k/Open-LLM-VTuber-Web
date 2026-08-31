@@ -23,12 +23,10 @@ export function useInputSubtitle() {
   const { aiState, setAiState } = useAiState();
   const { interrupt } = useInterrupt();
 
-  const lastAIMessage = messages
-    .filter((msg) => msg.role === 'ai')
-    .slice(-1)
-    .map((msg) => msg.content)[0];
-
-  const hasAIMessages = messages.some((msg) => msg.role === 'ai');
+  const timelineMessages = messages
+    .filter((message) => message.type !== 'tool_call_status'
+      && (message.type !== 'text' || Boolean(message.content.trim())))
+    .slice(-16);
 
   const handleInterrupt = () => {
     interrupt();
@@ -37,12 +35,12 @@ export function useInputSubtitle() {
     }
   };
 
-  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     handleChange({ target: { value: e.target.value } } as ChangeEvent<HTMLInputElement>);
     setAiState(AiStateEnum.WAITING);
   };
 
-  const handleKeyPress = (e: KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyPress = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     handleKey(e as any);
   };
 
@@ -54,8 +52,7 @@ export function useInputSubtitle() {
     handleCompositionEnd,
     handleInterrupt,
     handleMicToggle,
-    lastAIMessage,
-    hasAIMessages,
+    timelineMessages,
     aiState,
     micOn,
     handleSend,

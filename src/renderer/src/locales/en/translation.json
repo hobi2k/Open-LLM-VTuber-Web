@@ -169,6 +169,7 @@
   },
   "footer": {
     "typeYourMessage": "Type your message...",
+    "send": "Send message",
     "muteMic": "Mute microphone",
     "unmuteMic": "Unmute microphone",
     "interrupt": "Interrupt response",

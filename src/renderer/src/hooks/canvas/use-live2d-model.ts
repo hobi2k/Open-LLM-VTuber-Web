@@ -100,6 +100,7 @@ export const useLive2DModel = ({
   const modelStartPos = useRef<Position>({ x: 0, y: 0 }); // Model coordinates at drag start
   const modelPositionRef = useRef<Position>({ x: 0, y: 0 });
   const prevModelUrlRef = useRef<string | null>(null);
+  const previousModeRef = useRef(mode);
   const isHoveringModelRef = useRef(false);
   const electronApi = (window as any).electron;
 
@@ -171,6 +172,27 @@ export const useLive2DModel = ({
       }
     }
   }, []);
+
+  useEffect(() => {
+    if (previousModeRef.current === mode) return undefined;
+    previousModeRef.current = mode;
+
+    let secondFrame = 0;
+    const firstFrame = requestAnimationFrame(() => {
+      secondFrame = requestAnimationFrame(() => {
+        LAppDelegate.getInstance().onResize();
+        const x = Number(modelInfo?.initialXshift || 0);
+        const y = Number(modelInfo?.initialYshift || 0);
+        setModelPosition(x, y);
+        setPosition({ x, y });
+      });
+    });
+
+    return () => {
+      cancelAnimationFrame(firstFrame);
+      if (secondFrame) cancelAnimationFrame(secondFrame);
+    };
+  }, [mode, modelInfo?.initialXshift, modelInfo?.initialYshift, setModelPosition]);
 
   useEffect(() => {
     const timer = setTimeout(() => {

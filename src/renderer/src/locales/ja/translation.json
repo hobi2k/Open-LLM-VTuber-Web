@@ -169,6 +169,7 @@
   },
   "footer": {
     "typeYourMessage": "メッセージを入力...",
+    "send": "メッセージを送信",
     "muteMic": "マイクをミュート",
     "unmuteMic": "マイクのミュートを解除",
     "interrupt": "応答を中断",

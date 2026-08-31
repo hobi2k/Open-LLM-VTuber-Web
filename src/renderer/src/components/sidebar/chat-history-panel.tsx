@@ -24,6 +24,11 @@ import { useChatHistory } from "@/context/chat-history-context";
 import { useConfig } from "@/context/character-config-context";
 import { useWebSocket } from "@/context/websocket-context";
 import { Message } from "@/services/websocket-service";
+import {
+  activityInput,
+  activityOutput,
+  activityTitle,
+} from "@/utils/agent-activity";
 
 function formatTime(timestamp: string): string {
   const date = new Date(timestamp);
@@ -152,20 +157,32 @@ function ActivityDetail({
 }): JSX.Element {
   return (
     <Box pt="2.5" mt="2.5" borderTop="1px solid #2a353c" minW="0">
-      <Text color="#70808b" fontSize="2xs" fontWeight="semibold" mb="1.5">
-        {label}
-      </Text>
-      <Text
-        color="#cbd4da"
-        fontSize="xs"
-        lineHeight="1.6"
-        fontFamily={mono ? "mono" : "inherit"}
-        whiteSpace="pre-wrap"
-        overflowWrap="anywhere"
-        wordBreak="break-word"
+      {label && (
+        <Text color="#70808b" fontSize="2xs" fontWeight="semibold" mb="1.5">
+          {label}
+        </Text>
+      )}
+      <Box
+        maxH="180px"
+        overflowY="auto"
+        bg="#0b1114"
+        border="1px solid #202b31"
+        borderRadius="4px"
+        px="2.5"
+        py="2"
       >
-        {value}
-      </Text>
+        <Text
+          color="#cbd4da"
+          fontSize="xs"
+          lineHeight="1.6"
+          fontFamily={mono ? "mono" : "inherit"}
+          whiteSpace="pre-wrap"
+          overflowWrap="anywhere"
+          wordBreak="break-word"
+        >
+          {value}
+        </Text>
+      </Box>
     </Box>
   );
 }
@@ -226,6 +243,10 @@ function ActivityMessage({ message }: { message: Message }): JSX.Element {
     completed: "#55b987",
     error: "#d86b72",
   }[message.status || "running"];
+  const input = activityInput(message.input);
+  const output = activityOutput(message.output);
+  const title = activityTitle(message.title, message.tool_name, message.input);
+  const displayTitle = title !== message.command && title !== message.path ? title : '';
 
   return (
     <Box
@@ -278,16 +299,18 @@ function ActivityMessage({ message }: { message: Message }): JSX.Element {
               {formatTime(message.timestamp)}
             </Text>
           </Flex>
-          <Text
-            color="#e0e6e9"
-            fontSize="xs"
-            fontWeight="semibold"
-            lineHeight="1.5"
-            mt="1"
-            overflowWrap="anywhere"
-          >
-            {message.title || message.tool_name || labels[kind]}
-          </Text>
+          {displayTitle && (
+            <Text
+              color="#e0e6e9"
+              fontSize="xs"
+              fontWeight="semibold"
+              lineHeight="1.5"
+              mt="1"
+              overflowWrap="anywhere"
+            >
+              {displayTitle}
+            </Text>
+          )}
           {message.path && (
             <Text
               color="#8fa2ae"
@@ -304,23 +327,23 @@ function ActivityMessage({ message }: { message: Message }): JSX.Element {
       </Flex>
       {message.command && (
         <ActivityDetail
-          label={t("sidebar.activityCommand")}
+          label=""
           value={`$ ${message.command}`}
           mono
         />
       )}
-      {message.input && !message.command && (
+      {input && !message.command && (
         <ActivityDetail
           label={t("sidebar.activityInput")}
-          value={message.input}
+          value={input}
           mono
         />
       )}
       {message.diff && <DiffDetail value={message.diff} />}
-      {message.output && (
+      {output && (
         <ActivityDetail
           label={t("sidebar.activityOutput")}
-          value={message.output}
+          value={output}
           mono
         />
       )}

@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { useMode } from '@/context/mode-context';
+
 interface Position {
   x: number
   y: number
@@ -73,7 +74,7 @@ export function useDraggable({ componentId }: UseDraggableProps) {
       // Update position ref for future calculations
       positionRef.current = newPosition;
 
-      elementRef.current.style.transform = `translateX(-50%) translate(${positionRef.current.x}px, ${positionRef.current.y}px)`;
+      elementRef.current.style.transform = `translate(${positionRef.current.x}px, ${positionRef.current.y}px)`;
     };
 
     /**

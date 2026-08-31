@@ -60,7 +60,6 @@ function AppContent(): JSX.Element {
   const live2dBaseStyle = {
     position: "absolute" as const,
     overflow: "hidden",
-    transition: "all 0.3s ease-in-out", // Optional transition
     pointerEvents: "auto" as const,
   };
 

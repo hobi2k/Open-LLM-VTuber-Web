@@ -1,22 +1,120 @@
 import {
-  LuBell, LuSend, LuMic, LuMicOff, LuHand, LuX, LuMonitor,
+  LuBell,
+  LuBrain,
+  LuCircleAlert,
+  LuCircleCheck,
+  LuFilePenLine,
+  LuHand,
+  LuLoaderCircle,
+  LuMic,
+  LuMicOff,
+  LuMonitor,
+  LuSend,
+  LuTerminal,
+  LuWrench,
+  LuX,
 } from 'react-icons/lu';
 import {
   Box,
-  Button,
   Flex,
-  Input,
-  Stack,
-  Text,
-  VStack,
+  Icon,
   IconButton,
+  Spinner,
+  Text,
+  Textarea,
 } from '@chakra-ui/react';
-import { useState, useEffect, useCallback } from 'react';
+import {
+  useState, useEffect, useCallback, useRef,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import { useInputSubtitle } from '@/hooks/electron/use-input-subtitle';
 import { useDraggable } from '@/hooks/electron/use-draggable';
 import { inputSubtitleStyles } from './electron-style';
 import { useMode } from '@/context/mode-context';
+import { Message } from '@/services/websocket-service';
+import {
+  activityInput,
+  activityOutput,
+  activityTitle,
+} from '@/utils/agent-activity';
+
+function PetTimelineMessage({ message }: { message: Message }): JSX.Element {
+  const { t } = useTranslation();
+
+  if (message.type === 'reasoning') {
+    return (
+      <Box {...inputSubtitleStyles.reasoningMessage}>
+        <Flex align="center" gap="2" color="#8ebce0" mb={message.content ? '1.5' : '0'}>
+          {message.status === 'running' ? <Spinner size="xs" /> : <LuBrain size={14} />}
+          <Text fontSize="2xs" fontWeight="semibold">{t('sidebar.reasoning')}</Text>
+        </Flex>
+        {message.content && <Text {...inputSubtitleStyles.timelineText}>{message.content}</Text>}
+      </Box>
+    );
+  }
+
+  if (message.type === 'agent_activity') {
+    const kind = message.activity_kind || 'tool';
+    const labels = {
+      command: t('sidebar.activityCommand'),
+      file: t('sidebar.activityFile'),
+      tool: t('sidebar.activityTool'),
+    };
+    const ActivityIcon = {
+      command: LuTerminal,
+      file: LuFilePenLine,
+      tool: LuWrench,
+    }[kind];
+    const StatusIcon = {
+      error: LuCircleAlert,
+      completed: LuCircleCheck,
+      running: LuLoaderCircle,
+    }[message.status || 'running'];
+    const input = activityInput(message.input);
+    const output = activityOutput(message.output);
+    const title = activityTitle(message.title, message.tool_name, message.input);
+    const displayTitle = title !== message.command && title !== message.path ? title : '';
+
+    return (
+      <Box {...inputSubtitleStyles.activityMessage}>
+        <Flex gap="2.5" align="flex-start" minW="0">
+          <Flex {...inputSubtitleStyles.activityIcon}>
+            <ActivityIcon size={15} />
+          </Flex>
+          <Box minW="0" flex="1">
+            <Flex align="center" gap="2" minW="0">
+              <Text color="#7f929e" fontSize="2xs" fontWeight="semibold">
+                {labels[kind]}
+              </Text>
+              <Icon
+                as={StatusIcon}
+                boxSize="3.5"
+                color={message.status === 'error' ? '#ee9097' : '#73c99d'}
+              />
+            </Flex>
+            {displayTitle && (
+              <Text {...inputSubtitleStyles.activityTitle}>{displayTitle}</Text>
+            )}
+            {(message.command || message.path || input) && (
+              <Text {...inputSubtitleStyles.activityCode}>
+                {message.command ? `$ ${message.command}` : message.path || input}
+              </Text>
+            )}
+            {output && <Text {...inputSubtitleStyles.activityOutput}>{output}</Text>}
+          </Box>
+        </Flex>
+      </Box>
+    );
+  }
+
+  return (
+    <Flex justify={message.role === 'human' ? 'flex-end' : 'flex-start'}>
+      <Box {...inputSubtitleStyles.textMessage(message.role)}>
+        <Text {...inputSubtitleStyles.timelineText}>{message.content}</Text>
+      </Box>
+    </Flex>
+  );
+}
 
 export function InputSubtitle() {
   const { t } = useTranslation();
@@ -29,8 +127,7 @@ export function InputSubtitle() {
     handleInterrupt,
     handleMicToggle,
     handleSend,
-    lastAIMessage,
-    hasAIMessages,
+    timelineMessages,
     aiState,
     micOn,
   } = useInputSubtitle();
@@ -49,6 +146,7 @@ export function InputSubtitle() {
   });
 
   const [isVisible, setIsVisible] = useState(true);
+  const timelineRef = useRef<HTMLDivElement>(null);
 
   const handleClose = useCallback(() => {
     if (isPet) {
@@ -86,6 +184,11 @@ export function InputSubtitle() {
     };
   }, [isPet, handleClose]);
 
+  useEffect(() => {
+    const element = timelineRef.current;
+    if (element) element.scrollTop = element.scrollHeight;
+  }, [timelineMessages, aiState]);
+
   if (!isVisible) return null;
 
   return (
@@ -93,33 +196,14 @@ export function InputSubtitle() {
       ref={elementRef}
       {...inputSubtitleStyles.container}
       {...inputSubtitleStyles.draggableContainer(isDragging)}
-      onMouseDown={handleMouseDown}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
       <Box {...inputSubtitleStyles.box}>
-        <IconButton
-          aria-label="Close subtitle"
-          onClick={handleClose}
-          {...inputSubtitleStyles.closeButton}
+        <Box
+          {...inputSubtitleStyles.statusBox}
+          onMouseDown={handleMouseDown}
         >
-          <LuX size={12} />
-        </IconButton>
-
-        {hasAIMessages && (
-          <VStack
-            minH={lastAIMessage ? '32px' : '0px'}
-            {...inputSubtitleStyles.messageStack}
-          >
-            {lastAIMessage && (
-              <Text {...inputSubtitleStyles.messageText}>
-                {lastAIMessage}
-              </Text>
-            )}
-          </VStack>
-        )}
-
-        <Box {...inputSubtitleStyles.statusBox}>
           <Flex align="center" justify="space-between" color="whiteAlpha.700">
             <Flex align="center" gap="2">
               <LuBell size={16} />
@@ -151,28 +235,46 @@ export function InputSubtitle() {
               >
                 <LuHand size={16} />
               </IconButton>
+              <IconButton
+                aria-label="Close chat"
+                title="Close chat"
+                onClick={handleClose}
+                {...inputSubtitleStyles.iconButton}
+              >
+                <LuX size={16} />
+              </IconButton>
             </Flex>
           </Flex>
         </Box>
 
+        <Box ref={timelineRef} {...inputSubtitleStyles.timeline}>
+          {timelineMessages.length ? timelineMessages.map((message) => (
+            <PetTimelineMessage key={message.id} message={message} />
+          )) : (
+            <Text {...inputSubtitleStyles.emptyText}>{t('sidebar.noMessages')}</Text>
+          )}
+        </Box>
+
         <Box {...inputSubtitleStyles.inputBox}>
-          <Stack direction="row" gap="2" p="2">
-            <Input
+          <Flex gap="2" p="2.5" align="flex-end">
+            <Textarea
               value={inputValue}
               onChange={handleInputChange}
               onKeyDown={handleKeyPress}
               onCompositionStart={handleCompositionStart}
               onCompositionEnd={handleCompositionEnd}
-              placeholder="Type your message..."
+              placeholder={t('footer.typeYourMessage')}
               {...inputSubtitleStyles.input}
             />
-            <Button
+            <IconButton
+              aria-label={t('footer.send')}
+              title={t('footer.send')}
               onClick={handleSend}
               {...inputSubtitleStyles.sendButton}
             >
               <LuSend size={16} />
-            </Button>
-          </Stack>
+            </IconButton>
+          </Flex>
         </Box>
       </Box>
     </Box>
