@@ -579,7 +579,8 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
               overflowWrap="anywhere"
               mt="0.5"
             >
-              {executablePath ||
+              {(isOpenCode && "base_url" in connection && connection.base_url) ||
+                executablePath ||
                 selectedRuntime.connection.version ||
                 (isOpenCode
                   ? runtimeSettings.opencode.base_url

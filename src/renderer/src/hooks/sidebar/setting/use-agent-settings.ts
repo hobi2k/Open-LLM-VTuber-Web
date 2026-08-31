@@ -17,6 +17,9 @@ export type RuntimeProvider =
 
 interface OpenCodeConnection {
   connected: boolean;
+  base_url: string | null;
+  source: "configured" | "detected" | "managed" | null;
+  managed: boolean;
   version: string | null;
   path: string | null;
   executable_available: boolean;
@@ -176,6 +179,9 @@ const defaultRuntimeSettings: AgentRuntimeSettings = {
     has_server_password: false,
     connection: {
       connected: false,
+      base_url: null,
+      source: null,
+      managed: false,
       version: null,
       path: null,
       executable_available: false,
@@ -311,11 +317,13 @@ export function useAgentSettings({
     }
   }, [baseUrl, setCachedRuntimeSettings]);
 
-  const refreshRuntimeCatalog = useCallback(async () => {
+  const refreshRuntimeCatalog = useCallback(async (
+    settings: AgentRuntimeSettings = runtimeSettings,
+  ) => {
     const response = await fetch(`${baseUrl}/api/agent-runtime/catalog`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(settingsRequest(runtimeSettings)),
+      body: JSON.stringify(settingsRequest(settings)),
     });
     if (!response.ok) {
       throw new Error(`Runtime catalog request failed (${response.status})`);
@@ -487,26 +495,29 @@ export function useAgentSettings({
     setRuntimeChecked(false);
     setRuntimeError(null);
     try {
-      const [response] = await Promise.all([
-        fetch(`${baseUrl}/api/agent-runtime/check`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(settingsRequest(runtimeSettings)),
-        }),
-        refreshRuntimeCatalog(),
-      ]);
+      const response = await fetch(`${baseUrl}/api/agent-runtime/check`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(settingsRequest(runtimeSettings)),
+      });
       if (!response.ok) throw new Error(`Runtime connection check failed (${response.status})`);
       const connections = (await response.json()) as RuntimeConnections;
-      setRuntimeSettings((previous) => ({
-        ...previous,
-        opencode: { ...previous.opencode, connection: connections.opencode },
+      const nextSettings = {
+        ...runtimeSettings,
+        opencode: {
+          ...runtimeSettings.opencode,
+          base_url: connections.opencode.base_url || runtimeSettings.opencode.base_url,
+          connection: connections.opencode,
+        },
         claude_code: {
-          ...previous.claude_code,
+          ...runtimeSettings.claude_code,
           connection: connections.claude_code,
         },
-        codex: { ...previous.codex, connection: connections.codex },
-        hermes: { ...previous.hermes, connection: connections.hermes },
-      }));
+        codex: { ...runtimeSettings.codex, connection: connections.codex },
+        hermes: { ...runtimeSettings.hermes, connection: connections.hermes },
+      };
+      setRuntimeSettings(nextSettings);
+      await refreshRuntimeCatalog(nextSettings);
       setRuntimeChecked(true);
       setRuntimeState("ready");
     } catch (error) {
