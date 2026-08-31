@@ -68,7 +68,7 @@ export const sidebarStyles = {
     },
     content: {
       flex: 1,
-      width: '100%',
+      width: 'calc(100% - 24px)',
       display: 'flex',
       flexDirection: 'column' as const,
       gap: 3,

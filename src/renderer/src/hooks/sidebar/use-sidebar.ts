@@ -9,7 +9,7 @@ export const useSidebar = () => {
   const { sendMessage } = useWebSocket();
   const { interrupt } = useInterrupt();
   const { currentHistoryUid, messages, updateHistoryList } = useChatHistory();
-  const { setMode, mode, isElectron } = useMode();
+  const { setMode, isElectron } = useMode();
 
   const createNewHistory = (): void => {
     if (currentHistoryUid && messages.length > 0) {
@@ -30,7 +30,6 @@ export const useSidebar = () => {
     onSettingsClose: disclosure.onClose,
     createNewHistory,
     setMode,
-    currentMode: mode,
     isElectron,
   };
 };

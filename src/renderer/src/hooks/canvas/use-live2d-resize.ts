@@ -194,8 +194,16 @@ export const useLive2DResize = ({
       }
 
       const dpr = window.devicePixelRatio || 1;
-      canvas.width = Math.round(width * dpr);
-      canvas.height = Math.round(height * dpr);
+      const maxCanvasSize = gl
+        ? Number(gl.getParameter(gl.MAX_RENDERBUFFER_SIZE))
+        : 8192;
+      const renderScale = Math.min(
+        dpr,
+        maxCanvasSize / width,
+        maxCanvasSize / height,
+      );
+      canvas.width = Math.round(width * renderScale);
+      canvas.height = Math.round(height * renderScale);
       canvas.style.width = `${width}px`;
       canvas.style.height = `${height}px`;
 

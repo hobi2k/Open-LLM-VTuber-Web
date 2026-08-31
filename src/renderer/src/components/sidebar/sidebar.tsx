@@ -1,5 +1,5 @@
 /* eslint-disable react/require-default-props */
-import { Box, Button, Menu } from '@chakra-ui/react';
+import { Box, Button, Text } from '@chakra-ui/react';
 import {
   FiSettings, FiClock, FiPlus, FiChevronLeft, FiUsers, FiLayers,
 } from 'react-icons/fi';
@@ -24,7 +24,6 @@ interface HeaderButtonsProps {
   onSettingsOpen: () => void
   onNewHistory: () => void
   setMode: (mode: ModeType) => void
-  currentMode: 'window' | 'pet'
   isElectron: boolean
 }
 
@@ -46,57 +45,34 @@ const ToggleButton = memo(({ isCollapsed, onToggle }: {
 
 ToggleButton.displayName = 'ToggleButton';
 
-const ModeMenu = memo(({ setMode, currentMode, isElectron }: {
+const PetModeButton = memo(({ setMode, isElectron }: {
   setMode: (mode: ModeType) => void
-  currentMode: ModeType
   isElectron: boolean
 }) => {
   const { t } = useTranslation();
   return (
-    <Menu.Root>
-      <Menu.Trigger
-        as={Button}
-        {...sidebarStyles.sidebar.headerButton}
-        aria-label={t('sidebar.changeMode')}
-        title={t('sidebar.changeMode')}
-      >
-        <FiLayers />
-      </Menu.Trigger>
-      <Menu.Positioner>
-        <Menu.Content
-          bg="#11171b"
-          borderColor="#2c363f"
-          borderRadius="7px"
-          color="#d7dde2"
-          maxW="calc(100vw - 24px)"
-        >
-          <Menu.RadioItemGroup value={currentMode}>
-            <Menu.RadioItem value="window" onClick={() => setMode('window')}>
-              <Menu.ItemIndicator />
-              {t('sidebar.windowMode')}
-            </Menu.RadioItem>
-            <Menu.RadioItem
-              value="pet"
-              onClick={() => {
-                if (isElectron) {
-                  setMode('pet');
-                }
-              }}
-              disabled={!isElectron}
-            >
-              <Menu.ItemIndicator />
-              {t('sidebar.petMode')}
-            </Menu.RadioItem>
-          </Menu.RadioItemGroup>
-        </Menu.Content>
-      </Menu.Positioner>
-    </Menu.Root>
+    <Button
+      {...sidebarStyles.sidebar.headerButton}
+      width="auto"
+      minWidth="0"
+      px="2.5"
+      gap="2"
+      disabled={!isElectron}
+      aria-label={t('sidebar.petMode')}
+      title={t('sidebar.petMode')}
+      onClick={() => setMode('pet')}
+    >
+      <FiLayers />
+      <Text as="span" fontSize="xs" whiteSpace="nowrap">
+        {t('sidebar.petMode')}
+      </Text>
+    </Button>
   );
 });
 
-ModeMenu.displayName = 'ModeMenu';
+PetModeButton.displayName = 'PetModeButton';
 
-const HeaderButtons = memo(({ onSettingsOpen, onNewHistory, setMode, currentMode, isElectron }: HeaderButtonsProps) => {
+const HeaderButtons = memo(({ onSettingsOpen, onNewHistory, setMode, isElectron }: HeaderButtonsProps) => {
   const { t } = useTranslation();
   return (
     <Box display="flex" alignItems="center" width="full" gap={1.5}>
@@ -139,7 +115,7 @@ const HeaderButtons = memo(({ onSettingsOpen, onNewHistory, setMode, currentMode
       </Button>
 
       <Box width="1px" height="22px" bg="#2b343c" mx="0.5" />
-      <ModeMenu setMode={setMode} currentMode={currentMode} isElectron={isElectron} />
+      <PetModeButton setMode={setMode} isElectron={isElectron} />
     </Box>
   );
 });
@@ -150,7 +126,6 @@ const SidebarContent = memo(({
   onSettingsOpen,
   onNewHistory,
   setMode,
-  currentMode,
   isElectron,
 }: HeaderButtonsProps) => (
   <Box {...sidebarStyles.sidebar.content}>
@@ -159,7 +134,6 @@ const SidebarContent = memo(({
         onSettingsOpen={onSettingsOpen}
         onNewHistory={onNewHistory}
         setMode={setMode}
-        currentMode={currentMode}
         isElectron={isElectron}
       />
     </Box>
@@ -178,7 +152,6 @@ function Sidebar({ isCollapsed = false, onToggle }: SidebarProps): JSX.Element {
     onSettingsClose,
     createNewHistory,
     setMode,
-    currentMode,
     isElectron,
   } = useSidebar();
 
@@ -191,7 +164,6 @@ function Sidebar({ isCollapsed = false, onToggle }: SidebarProps): JSX.Element {
           onSettingsOpen={onSettingsOpen}
           onNewHistory={createNewHistory}
           setMode={setMode}
-          currentMode={currentMode}
           isElectron={isElectron}
         />
       )}

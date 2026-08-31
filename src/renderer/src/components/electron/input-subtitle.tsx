@@ -1,5 +1,5 @@
 import {
-  LuBell, LuSend, LuMic, LuMicOff, LuHand, LuX,
+  LuBell, LuSend, LuMic, LuMicOff, LuHand, LuX, LuMonitor,
 } from 'react-icons/lu';
 import {
   Box,
@@ -12,12 +12,14 @@ import {
   IconButton,
 } from '@chakra-ui/react';
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useInputSubtitle } from '@/hooks/electron/use-input-subtitle';
 import { useDraggable } from '@/hooks/electron/use-draggable';
 import { inputSubtitleStyles } from './electron-style';
 import { useMode } from '@/context/mode-context';
 
 export function InputSubtitle() {
+  const { t } = useTranslation();
   const {
     inputValue,
     handleInputChange,
@@ -33,7 +35,7 @@ export function InputSubtitle() {
     micOn,
   } = useInputSubtitle();
 
-  const { mode } = useMode();
+  const { mode, setMode } = useMode();
   const isPet = mode === 'pet';
 
   const {
@@ -127,6 +129,14 @@ export function InputSubtitle() {
             </Flex>
 
             <Flex gap="2">
+              <IconButton
+                aria-label={t('sidebar.windowMode')}
+                title={t('sidebar.windowMode')}
+                onClick={() => setMode('window')}
+                {...inputSubtitleStyles.iconButton}
+              >
+                <LuMonitor size={16} />
+              </IconButton>
               <IconButton
                 aria-label="Toggle microphone"
                 onClick={handleMicToggle}

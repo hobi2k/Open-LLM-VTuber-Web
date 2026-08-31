@@ -196,32 +196,19 @@ export class WindowManager {
     this.window.setBackgroundColor('#00000000');
 
     this.window.setAlwaysOnTop(true, 'screen-saver');
-    this.window.setPosition(0, 0);
 
     this.window.webContents.send('pre-mode-changed', 'pet');
   }
 
   private continueSetWindowModePet(): void {
     if (!this.window) return;
-    // Calculate the bounding rectangle that covers all connected displays.
-    // This allows the transparent pet-mode window to span across monitors,
-    // so the avatar can be dragged freely between them.
-    const displays = screen.getAllDisplays();
-    const minX = Math.min(...displays.map((d) => d.bounds.x));
-    const minY = Math.min(...displays.map((d) => d.bounds.y));
-    const maxX = Math.max(...displays.map((d) => d.bounds.x + d.bounds.width));
-    const maxY = Math.max(...displays.map((d) => d.bounds.y + d.bounds.height));
-    const combinedWidth = maxX - minX;
-    const combinedHeight = maxY - minY;
 
-    // Resize and position the window to cover the entire virtual screen
-    // so the avatar is not clipped when dragged to a second monitor.
-    this.window.setBounds({
-      x: minX,
-      y: minY,
-      width: combinedWidth,
-      height: combinedHeight,
-    });
+    // A canvas spanning every display can exceed WebGL's renderbuffer limit.
+    // Keep the pet on the display where window mode was last visible.
+    const display = screen.getDisplayMatching(
+      this.windowedBounds || this.window.getBounds(),
+    );
+    this.window.setBounds(display.workArea);
 
     if (isMac) this.window.setWindowButtonVisibility(false);
     this.window.setResizable(false);
