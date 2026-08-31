@@ -36,11 +36,19 @@ export interface Message {
   avatar?: string;
 
   // Fields for different message types (make optional)
-  type?: 'text' | 'tool_call_status' | 'reasoning';
+  type?: 'text' | 'tool_call_status' | 'reasoning' | 'agent_activity';
   reasoning_id?: string;
   tool_id?: string; // Specific to tool calls
   tool_name?: string; // Specific to tool calls
   status?: 'running' | 'completed' | 'error'; // Specific to tool calls
+  activity_id?: string;
+  activity_kind?: 'command' | 'file' | 'tool';
+  title?: string;
+  command?: string;
+  path?: string;
+  input?: string;
+  output?: string;
+  diff?: string;
 }
 
 export interface Actions {
@@ -50,13 +58,21 @@ export interface Actions {
 }
 
 export interface MessageEvent {
-  tool_id: any;
-  tool_name: any;
-  name: any;
-  status: any;
-  content: string;
-  timestamp: string;
+  tool_id?: string;
+  tool_name?: string;
+  name?: string;
+  status?: 'running' | 'completed' | 'error';
+  content?: string;
+  timestamp?: string;
   type: string;
+  activity_id?: string;
+  activity_kind?: 'command' | 'file' | 'tool';
+  title?: string;
+  command?: string;
+  path?: string;
+  input?: string;
+  output?: string;
+  diff?: string;
   audio?: string;
   volumes?: number[];
   slice_length?: number;

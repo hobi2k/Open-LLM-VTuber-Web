@@ -33,6 +33,7 @@ function WebSocketHandler({ children }: { children: React.ReactNode }) {
     appendHumanMessage,
     appendOrUpdateToolCallMessage,
     appendOrUpdateReasoningMessage,
+    appendOrUpdateActivityMessage,
     finishRunningReasoning,
   } = useChatHistory();
   const { addAudioTask } = useAudioTask();
@@ -313,10 +314,32 @@ function WebSocketHandler({ children }: { children: React.ReactNode }) {
           });
         }
         break;
+      case 'agent-activity':
+        if (message.activity_id && message.activity_kind && message.status) {
+          appendOrUpdateActivityMessage({
+            activity_id: message.activity_id,
+            activity_kind: message.activity_kind,
+            type: 'agent_activity',
+            role: 'ai',
+            tool_name: message.tool_name,
+            title: message.title,
+            command: message.command,
+            path: message.path,
+            input: message.input,
+            output: message.output,
+            diff: message.diff,
+            content: message.content || '',
+            status: message.status,
+            timestamp: message.timestamp || new Date().toISOString(),
+          });
+        } else {
+          console.warn('Received incomplete agent activity message:', message);
+        }
+        break;
       default:
         console.warn('Unknown message type:', message.type);
     }
-  }, [aiState, addAudioTask, appendHumanMessage, baseUrl, bgUrlContext, setAiState, setConfName, setConfUid, setConfigFiles, setCurrentHistoryUid, setHistoryList, setMessages, setModelInfo, setSubtitleText, startMic, stopMic, subtitleText, setSelfUid, setGroupMembers, setIsOwner, backendSynthComplete, setBackendSynthComplete, clearResponse, finishRunningReasoning, handleControlMessage, appendOrUpdateToolCallMessage, appendOrUpdateReasoningMessage, interrupt, setBrowserViewData, t]);
+  }, [aiState, addAudioTask, appendHumanMessage, baseUrl, bgUrlContext, setAiState, setConfName, setConfUid, setConfigFiles, setCurrentHistoryUid, setHistoryList, setMessages, setModelInfo, setSubtitleText, startMic, stopMic, subtitleText, setSelfUid, setGroupMembers, setIsOwner, backendSynthComplete, setBackendSynthComplete, clearResponse, finishRunningReasoning, handleControlMessage, appendOrUpdateToolCallMessage, appendOrUpdateReasoningMessage, appendOrUpdateActivityMessage, interrupt, setBrowserViewData, t]);
 
   useEffect(() => {
     const stateSubscription = wsService.onStateChange(setWsState);

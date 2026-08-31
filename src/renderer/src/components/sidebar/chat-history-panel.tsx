@@ -14,7 +14,9 @@ import { useTranslation } from "react-i18next";
 import {
   HiCheckCircle,
   HiChatBubbleLeftRight,
+  HiCommandLine,
   HiCpuChip,
+  HiDocumentText,
   HiExclamationCircle,
   HiWrenchScrewdriver,
 } from "react-icons/hi2";
@@ -124,11 +126,205 @@ function ToolMessage({ message }: { message: Message }): JSX.Element {
       py="2"
     >
       <Icon as={HiWrenchScrewdriver} color="#7f98a9" flexShrink="0" />
-      <Text color="#aeb9c1" fontSize="xs" lineHeight="1.4" overflowWrap="anywhere">
+      <Text
+        color="#aeb9c1"
+        fontSize="xs"
+        lineHeight="1.4"
+        overflowWrap="anywhere"
+      >
         {label}
       </Text>
-      <Box ml="auto" flexShrink="0">{statusIcon}</Box>
+      <Box ml="auto" flexShrink="0">
+        {statusIcon}
+      </Box>
     </Flex>
+  );
+}
+
+function ActivityDetail({
+  label,
+  value,
+  mono = false,
+}: {
+  label: string;
+  value: string;
+  mono?: boolean;
+}): JSX.Element {
+  return (
+    <Box pt="2.5" mt="2.5" borderTop="1px solid #2a353c" minW="0">
+      <Text color="#70808b" fontSize="2xs" fontWeight="semibold" mb="1.5">
+        {label}
+      </Text>
+      <Text
+        color="#cbd4da"
+        fontSize="xs"
+        lineHeight="1.6"
+        fontFamily={mono ? "mono" : "inherit"}
+        whiteSpace="pre-wrap"
+        overflowWrap="anywhere"
+        wordBreak="break-word"
+      >
+        {value}
+      </Text>
+    </Box>
+  );
+}
+
+function diffLineColor(line: string): string {
+  if (line.startsWith("+") && !line.startsWith("+++")) return "#8dd9ad";
+  if (line.startsWith("-") && !line.startsWith("---")) return "#ee9a9f";
+  if (line.startsWith("@@")) return "#8ebce0";
+  return "#aab5bd";
+}
+
+function DiffDetail({ value }: { value: string }): JSX.Element {
+  const { t } = useTranslation();
+  return (
+    <Box pt="2.5" mt="2.5" borderTop="1px solid #2a353c" minW="0">
+      <Text color="#70808b" fontSize="2xs" fontWeight="semibold" mb="1.5">
+        {t("sidebar.activityDiff")}
+      </Text>
+      <Box fontFamily="mono" fontSize="2xs" lineHeight="1.65" minW="0">
+        {value.split("\n").map((line, index) => (
+          <Text
+            // Diff lines can repeat, so their position is part of the identity.
+            // eslint-disable-next-line react/no-array-index-key
+            key={`${index}-${line}`}
+            color={diffLineColor(line)}
+            whiteSpace="pre-wrap"
+            overflowWrap="anywhere"
+            wordBreak="break-word"
+          >
+            {line || " "}
+          </Text>
+        ))}
+      </Box>
+    </Box>
+  );
+}
+
+function ActivityMessage({ message }: { message: Message }): JSX.Element {
+  const { t } = useTranslation();
+  const kind = message.activity_kind || "tool";
+  const labels = {
+    command: t("sidebar.activityCommand"),
+    file: t("sidebar.activityFile"),
+    tool: t("sidebar.activityTool"),
+  };
+  const statusLabels = {
+    running: t("sidebar.activityRunning"),
+    completed: t("sidebar.activityCompleted"),
+    error: t("sidebar.activityFailed"),
+  };
+  const icon = {
+    command: HiCommandLine,
+    file: HiDocumentText,
+    tool: HiWrenchScrewdriver,
+  }[kind];
+  const accent = {
+    running: "#6d9fbe",
+    completed: "#55b987",
+    error: "#d86b72",
+  }[message.status || "running"];
+
+  return (
+    <Box
+      ml="10"
+      mr="2"
+      minW="0"
+      border="1px solid #2a353c"
+      borderLeft={`3px solid ${accent}`}
+      borderRadius="6px"
+      bg="#12191d"
+      px="3"
+      py="2.5"
+    >
+      <Flex align="flex-start" gap="2.5" minW="0">
+        <Flex
+          align="center"
+          justify="center"
+          width="7"
+          height="7"
+          bg="#1b252b"
+          color="#a6bbc8"
+          borderRadius="5px"
+          flexShrink="0"
+        >
+          <Icon as={icon} boxSize="4" />
+        </Flex>
+        <Box minW="0" flex="1">
+          <Flex align="center" gap="2" minW="0" wrap="wrap">
+            <Text color="#7f929e" fontSize="2xs" fontWeight="semibold">
+              {labels[kind]}
+            </Text>
+            <Flex align="center" gap="1.5" color={accent}>
+              {message.status === "running" ? (
+                <Spinner size="xs" />
+              ) : (
+                <Icon
+                  as={
+                    message.status === "error"
+                      ? HiExclamationCircle
+                      : HiCheckCircle
+                  }
+                  boxSize="3.5"
+                />
+              )}
+              <Text fontSize="2xs" fontWeight="semibold">
+                {statusLabels[message.status || "running"]}
+              </Text>
+            </Flex>
+            <Text color="#596873" fontSize="2xs" ml="auto" flexShrink="0">
+              {formatTime(message.timestamp)}
+            </Text>
+          </Flex>
+          <Text
+            color="#e0e6e9"
+            fontSize="xs"
+            fontWeight="semibold"
+            lineHeight="1.5"
+            mt="1"
+            overflowWrap="anywhere"
+          >
+            {message.title || message.tool_name || labels[kind]}
+          </Text>
+          {message.path && (
+            <Text
+              color="#8fa2ae"
+              fontFamily="mono"
+              fontSize="2xs"
+              mt="1"
+              whiteSpace="pre-wrap"
+              overflowWrap="anywhere"
+            >
+              {message.path}
+            </Text>
+          )}
+        </Box>
+      </Flex>
+      {message.command && (
+        <ActivityDetail
+          label={t("sidebar.activityCommand")}
+          value={`$ ${message.command}`}
+          mono
+        />
+      )}
+      {message.input && !message.command && (
+        <ActivityDetail
+          label={t("sidebar.activityInput")}
+          value={message.input}
+          mono
+        />
+      )}
+      {message.diff && <DiffDetail value={message.diff} />}
+      {message.output && (
+        <ActivityDetail
+          label={t("sidebar.activityOutput")}
+          value={message.output}
+          mono
+        />
+      )}
+    </Box>
   );
 }
 
@@ -139,11 +335,12 @@ function ChatHistoryPanel(): JSX.Element {
   const { baseUrl } = useWebSocket();
   const scrollRef = useRef<HTMLDivElement>(null);
   const validMessages = useMemo(
-    () => messages.filter((message) => (
-      Boolean(message.content)
-      || message.type === "reasoning"
-      || message.type === "tool_call_status"
-    )),
+    () => messages.filter(
+      (message) => Boolean(message.content) ||
+          message.type === "reasoning" ||
+          message.type === "tool_call_status" ||
+          message.type === "agent_activity",
+    ),
     [messages],
   );
 
@@ -169,7 +366,12 @@ function ChatHistoryPanel(): JSX.Element {
         bg="#10161a"
       >
         <Box minW="0">
-          <Text color="#edf1f4" fontSize="sm" fontWeight="semibold" lineHeight="1.3">
+          <Text
+            color="#edf1f4"
+            fontSize="sm"
+            fontWeight="semibold"
+            lineHeight="1.3"
+          >
             {confName || t("sidebar.conversation")}
           </Text>
           <Text color="#73808a" fontSize="2xs" mt="0.5">
@@ -236,12 +438,18 @@ function ChatHistoryPanel(): JSX.Element {
               if (message.type === "tool_call_status") {
                 return <ToolMessage key={message.id} message={message} />;
               }
+              if (message.type === "agent_activity") {
+                return <ActivityMessage key={message.id} message={message} />;
+              }
 
               const isAI = message.role === "ai";
-              const name = isAI ? (message.name || confName || "AI") : t("sidebar.you");
-              const avatar = isAI && message.avatar
-                ? `${baseUrl}/avatars/${message.avatar}`
-                : undefined;
+              const name = isAI
+                ? message.name || confName || "AI"
+                : t("sidebar.you");
+              const avatar =
+                isAI && message.avatar
+                  ? `${baseUrl}/avatars/${message.avatar}`
+                  : undefined;
               return (
                 <Flex
                   key={message.id}
@@ -258,7 +466,11 @@ function ChatHistoryPanel(): JSX.Element {
                       gap="2"
                       mb="1"
                     >
-                      <Text color="#98a5ae" fontSize="2xs" fontWeight="semibold">
+                      <Text
+                        color="#98a5ae"
+                        fontSize="2xs"
+                        fontWeight="semibold"
+                      >
                         {name}
                       </Text>
                       <Text color="#56636c" fontSize="2xs">

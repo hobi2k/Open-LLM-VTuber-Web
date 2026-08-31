@@ -17,6 +17,7 @@ interface ChatHistoryState {
   appendAIMessage: (content: string, name?: string, avatar?: string) => void;
   appendOrUpdateToolCallMessage: (toolMessageData: Partial<Message>) => void; // Accept partial data
   appendOrUpdateReasoningMessage: (reasoningData: Partial<Message>) => void;
+  appendOrUpdateActivityMessage: (activityData: Partial<Message>) => void;
   finishRunningReasoning: () => void;
   clearReasoningMessages: () => void;
   setMessages: (messages: Message[]) => void; // Use the unified Message type
@@ -190,6 +191,51 @@ export function ChatHistoryProvider({ children }: { children: React.ReactNode })
     });
   }, []);
 
+  const appendOrUpdateActivityMessage = useCallback((activityData: Partial<Message>) => {
+    if (!activityData.activity_id || !activityData.activity_kind || !activityData.status) return;
+    setMessages((previous) => {
+      const index = previous.findIndex(
+        (message) => message.type === 'agent_activity'
+          && message.activity_id === activityData.activity_id,
+      );
+      if (index === -1) {
+        return [...previous, {
+          id: `activity-${activityData.activity_id}`,
+          activity_id: activityData.activity_id,
+          activity_kind: activityData.activity_kind,
+          role: 'ai',
+          type: 'agent_activity',
+          tool_name: activityData.tool_name,
+          title: activityData.title,
+          command: activityData.command,
+          path: activityData.path,
+          input: activityData.input,
+          output: activityData.output,
+          diff: activityData.diff,
+          content: activityData.content || '',
+          status: activityData.status,
+          timestamp: activityData.timestamp || new Date().toISOString(),
+        }];
+      }
+      const updatedMessages = [...previous];
+      updatedMessages[index] = {
+        ...updatedMessages[index],
+        activity_kind: activityData.activity_kind,
+        tool_name: activityData.tool_name ?? updatedMessages[index].tool_name,
+        title: activityData.title ?? updatedMessages[index].title,
+        command: activityData.command ?? updatedMessages[index].command,
+        path: activityData.path ?? updatedMessages[index].path,
+        input: activityData.input ?? updatedMessages[index].input,
+        output: activityData.output ?? updatedMessages[index].output,
+        diff: activityData.diff ?? updatedMessages[index].diff,
+        content: activityData.content ?? updatedMessages[index].content,
+        status: activityData.status,
+        timestamp: activityData.timestamp || new Date().toISOString(),
+      };
+      return updatedMessages;
+    });
+  }, []);
+
   const finishRunningReasoning = useCallback(() => {
     setMessages((previous) => previous.map((message) => (
       message.type === 'reasoning' && message.status === 'running'
@@ -254,6 +300,7 @@ export function ChatHistoryProvider({ children }: { children: React.ReactNode })
       appendAIMessage,
       appendOrUpdateToolCallMessage, // Add to context value
       appendOrUpdateReasoningMessage,
+      appendOrUpdateActivityMessage,
       finishRunningReasoning,
       clearReasoningMessages,
       setMessages,
@@ -274,6 +321,7 @@ export function ChatHistoryProvider({ children }: { children: React.ReactNode })
       appendAIMessage,
       appendOrUpdateToolCallMessage, // Add dependency
       appendOrUpdateReasoningMessage,
+      appendOrUpdateActivityMessage,
       finishRunningReasoning,
       clearReasoningMessages,
       updateHistoryList,

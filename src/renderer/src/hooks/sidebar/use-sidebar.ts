@@ -14,7 +14,7 @@ export const useSidebar = () => {
   const createNewHistory = (): void => {
     if (currentHistoryUid && messages.length > 0) {
       const latestMessage = messages.slice().reverse()
-        .find((message) => message.type !== 'reasoning') || null;
+        .find((message) => !message.type || message.type === 'text') || null;
       updateHistoryList(currentHistoryUid, latestMessage);
     }
 
