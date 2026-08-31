@@ -93,6 +93,18 @@
         "allowTools": "コーディングツールを許可",
         "showReasoning": "思考内容を表示",
         "showReasoningHelp": "推論を最終回答とは別に表示します。モデルの推論設定は変更しません。",
+        "reasoningEffort": "推論の強度",
+        "reasoningEffortHelp": "モデルの推論深度を調整します。CLIの既定値を選ぶと、ランタイムまたは再開したセッションの設定を維持します。",
+        "reasoningEffortLevels": {
+          "none": "なし",
+          "minimal": "最小",
+          "low": "低",
+          "medium": "中",
+          "high": "高",
+          "xhigh": "非常に高い",
+          "max": "最大",
+          "ultra": "ウルトラ"
+        },
         "useDefault": "CLIの既定値を使用",
         "autoDetect": "自動検出",
         "detected": "検出済み",

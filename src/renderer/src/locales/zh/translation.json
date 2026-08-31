@@ -93,6 +93,18 @@
         "allowTools": "允许编码工具",
         "showReasoning": "显示思考内容",
         "showReasoningHelp": "将推理与最终回复分开显示，不会更改模型的推理设置。",
+        "reasoningEffort": "推理强度",
+        "reasoningEffortHelp": "控制模型的推理深度。使用 CLI 默认值可保留运行时或恢复会话的设置。",
+        "reasoningEffortLevels": {
+          "none": "无",
+          "minimal": "最小",
+          "low": "低",
+          "medium": "中",
+          "high": "高",
+          "xhigh": "超高",
+          "max": "最大",
+          "ultra": "极限"
+        },
         "useDefault": "使用 CLI 默认值",
         "autoDetect": "自动检测",
         "detected": "已检测",

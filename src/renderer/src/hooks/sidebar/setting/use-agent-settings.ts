@@ -34,11 +34,22 @@ interface CLIConnection {
 
 export type LaunchMode = "direct" | "omlx";
 export type InteractionMode = "character" | "coding";
+export type ReasoningEffort =
+  | "default"
+  | "none"
+  | "minimal"
+  | "low"
+  | "medium"
+  | "high"
+  | "xhigh"
+  | "max"
+  | "ultra";
 
 export interface RuntimeModel {
   id: string;
   label: string;
   provider: string;
+  reasoning_efforts?: ReasoningEffort[];
 }
 
 export interface RuntimeProject {
@@ -111,6 +122,7 @@ export interface CLIRuntimeSettings {
   workspace_directory: string;
   timeout: number;
   show_reasoning: boolean;
+  reasoning_effort: ReasoningEffort;
   allow_tools: boolean;
   connection: CLIConnection;
 }
@@ -182,6 +194,7 @@ const defaultRuntimeSettings: AgentRuntimeSettings = {
     workspace_directory: ".",
     timeout: 300,
     show_reasoning: false,
+    reasoning_effort: "default",
     allow_tools: false,
     connection: unavailableCLI,
   },
@@ -195,6 +208,7 @@ const defaultRuntimeSettings: AgentRuntimeSettings = {
     workspace_directory: ".",
     timeout: 300,
     show_reasoning: false,
+    reasoning_effort: "default",
     allow_tools: false,
     connection: unavailableCLI,
   },
@@ -208,6 +222,7 @@ const defaultRuntimeSettings: AgentRuntimeSettings = {
     workspace_directory: ".",
     timeout: 300,
     show_reasoning: false,
+    reasoning_effort: "default",
     allow_tools: false,
     connection: unavailableCLI,
   },

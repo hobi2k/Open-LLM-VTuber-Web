@@ -93,6 +93,18 @@
         "allowTools": "Allow coding tools",
         "showReasoning": "Show thinking",
         "showReasoningHelp": "Display reasoning separately from the final response. This does not change the model's reasoning settings.",
+        "reasoningEffort": "Reasoning effort",
+        "reasoningEffortHelp": "Controls the model's reasoning depth. Use CLI default to keep the runtime or resumed session setting.",
+        "reasoningEffortLevels": {
+          "none": "None",
+          "minimal": "Minimal",
+          "low": "Low",
+          "medium": "Medium",
+          "high": "High",
+          "xhigh": "Extra high",
+          "max": "Maximum",
+          "ultra": "Ultra"
+        },
         "useDefault": "Use CLI default",
         "autoDetect": "Auto detect",
         "detected": "Detected",

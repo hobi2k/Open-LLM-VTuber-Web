@@ -1,4 +1,3 @@
-/* eslint-disable react/require-default-props */
 import { useState } from 'react';
 import {
   Text, Input, NumberInput, createListCollection, Flex, Box,
@@ -66,6 +65,7 @@ interface SelectFieldProps {
   onChange: (value: string[]) => void
   collection: ReturnType<typeof createListCollection<{ label: string; value: string }>>
   placeholder: string
+  help?: string
 }
 
 interface NumberFieldProps {
@@ -101,15 +101,17 @@ export function SelectField({
   onChange,
   collection,
   placeholder,
+  help,
 }: SelectFieldProps): JSX.Element {
   return (
     <Field
       width="full"
       minWidth="0"
       label={(
-        <Text {...settingStyles.common.fieldLabel} width="full">
-          {label}
-        </Text>
+        <Flex align="center" width="full" minWidth="0">
+          <Text {...settingStyles.common.fieldLabel}>{label}</Text>
+          {help && <HelpIcon content={help} />}
+        </Flex>
       )}
     >
       <SelectRoot
@@ -131,6 +133,9 @@ export function SelectField({
           borderColor="#2c363f"
           borderRadius="7px"
           color="#d7dde2"
+          zIndex="popover"
+          maxH="min(320px, calc(100vh - 32px))"
+          overflowY="auto"
           maxW="calc(100vw - 32px)"
         >
           {collection.items.map((item) => (

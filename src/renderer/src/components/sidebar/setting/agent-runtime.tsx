@@ -1,9 +1,9 @@
-/* eslint-disable import/no-extraneous-dependencies */
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Badge,
   Box,
   Button,
+  createListCollection,
   Flex,
   Input,
   SegmentGroup,
@@ -30,12 +30,18 @@ import {
 } from "@/components/ui/dialog";
 import {
   InteractionMode,
+  ReasoningEffort,
   RuntimeModel,
   RuntimeProvider,
   RuntimeSession,
   useAgentSettings,
 } from "@/hooks/sidebar/setting/use-agent-settings";
-import { InputField, NumberField, SwitchField } from "./common";
+import {
+  InputField,
+  NumberField,
+  SelectField,
+  SwitchField,
+} from "./common";
 import {
   EditableChoice,
   EditableChoiceField,
@@ -159,15 +165,25 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
           provider: "omlx",
         }))
         : catalogModels;
-    const currentModel: RuntimeModel = {
-      id: selectedRuntime.model,
-      label: selectedRuntime.model || t("settings.agent.runtime.useDefault"),
-      provider: isOpenCode
-        ? runtimeSettings.opencode.provider_id
-        : runtimeSettings[runtimeKey].provider,
-    };
+    const currentModel: RuntimeModel | null = selectedRuntime.model
+      ? {
+        id: selectedRuntime.model,
+        label: selectedRuntime.model,
+        provider: isOpenCode
+          ? runtimeSettings.opencode.provider_id
+          : runtimeSettings[runtimeKey].provider,
+      }
+      : null;
     const values = new Map(
-      [currentModel, ...filtered].map((model) => [
+      [
+        {
+          id: "",
+          label: t("settings.agent.runtime.useDefault"),
+          provider: "",
+        },
+        ...(currentModel ? [currentModel] : []),
+        ...filtered,
+      ].map((model) => [
         `${model.provider}::${model.id}`,
         model,
       ]),
@@ -205,6 +221,38 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
       label: provider,
     }));
   }, [modelOptions, selectedProvider]);
+  const reasoningEffortValues = useMemo<ReasoningEffort[]>(() => {
+    if (runtimeKey === "codex") {
+      const model = modelOptions.find(
+        (item) => item.id === selectedRuntime.model,
+      );
+      if (model?.reasoning_efforts?.length) {
+        return [...new Set(model.reasoning_efforts)];
+      }
+      const detected = runtimeCatalog.models.codex.flatMap(
+        (item) => item.reasoning_efforts || [],
+      );
+      if (detected.length) return [...new Set(detected)];
+    }
+    return ["low", "medium", "high", "xhigh", "max"];
+  }, [modelOptions, runtimeCatalog.models.codex, runtimeKey, selectedRuntime.model]);
+  const selectedReasoningEffort =
+    runtimeKey === "claude_code" || runtimeKey === "codex"
+      ? runtimeSettings[runtimeKey].reasoning_effort || "default"
+      : "default";
+  const reasoningEffortCollection = useMemo(
+    () => createListCollection<{ label: string; value: string }>({
+      items: ["default" as ReasoningEffort, ...reasoningEffortValues].map(
+        (value) => ({
+          value,
+          label: value === "default"
+            ? t("settings.agent.runtime.useDefault")
+            : t(`settings.agent.runtime.reasoningEffortLevels.${value}`),
+        }),
+      ),
+    }),
+    [reasoningEffortValues, t],
+  );
 
   const projectOptions = useMemo(() => {
     const values = new Map(
@@ -322,6 +370,14 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
     }
     handleCLISettingChange(runtimeKey, "provider", model.provider);
     handleCLISettingChange(runtimeKey, "model", model.id);
+    if (
+      runtimeKey === "codex"
+      && model.reasoning_efforts?.length
+      && selectedReasoningEffort !== "default"
+      && !model.reasoning_efforts.includes(selectedReasoningEffort)
+    ) {
+      handleCLISettingChange(runtimeKey, "reasoning_effort", "default");
+    }
   };
 
   const inputModel = (value: string): void => {
@@ -732,6 +788,22 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
         emptyText={t("settings.agent.runtime.noMatches")}
         help={selectedProvider || undefined}
       />
+
+      {(runtimeKey === "claude_code" || runtimeKey === "codex") && (
+        <SelectField
+          label={t("settings.agent.runtime.reasoningEffort")}
+          value={[selectedReasoningEffort]}
+          onChange={(value) => {
+            const effort = value[0] as ReasoningEffort | undefined;
+            if (effort) {
+              handleCLISettingChange(runtimeKey, "reasoning_effort", effort);
+            }
+          }}
+          collection={reasoningEffortCollection}
+          placeholder={t("settings.agent.runtime.useDefault")}
+          help={t("settings.agent.runtime.reasoningEffortHelp")}
+        />
+      )}
 
       <Flex align="end" gap="2">
         <Box flex="1" minW="0">
