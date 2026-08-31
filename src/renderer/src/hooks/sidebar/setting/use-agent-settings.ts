@@ -251,7 +251,7 @@ export function useAgentSettings({
   onCancel,
 }: UseAgentSettingsProps = {}) {
   const { settings: persistedSettings, updateSettings } = useProactiveSpeak();
-  const { baseUrl } = useWebSocket();
+  const { baseUrl, wsState } = useWebSocket();
   const { clearReasoningMessages } = useChatHistory();
   const [tempSettings, setTempSettings] = useState({
     allowProactiveSpeak: persistedSettings.allowProactiveSpeak,
@@ -276,7 +276,7 @@ export function useAgentSettings({
   const [runtimeCatalog, setRuntimeCatalog] = useState(cachedRuntimeCatalog);
   const [runtimeState, setRuntimeState] = useState<
     "loading" | "ready" | "saving" | "checking" | "error"
-  >("loading");
+  >("ready");
   const [runtimeChecked, setRuntimeChecked] = useState(false);
   const [runtimeError, setRuntimeError] = useState<string | null>(null);
 
@@ -326,8 +326,8 @@ export function useAgentSettings({
   }, [baseUrl, runtimeSettings, setCachedRuntimeCatalog]);
 
   useEffect(() => {
-    loadRuntimeSettings();
-  }, [loadRuntimeSettings]);
+    if (wsState === "OPEN") loadRuntimeSettings();
+  }, [loadRuntimeSettings, wsState]);
 
   const handleAllowProactiveSpeakChange = useCallback((checked: boolean) => {
     setTempSettings((previous) => ({
