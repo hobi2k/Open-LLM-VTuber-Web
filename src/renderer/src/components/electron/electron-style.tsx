@@ -2,17 +2,27 @@ import { SystemStyleObject } from '@chakra-ui/react';
 
 export const inputSubtitleStyles = {
   container: {
-    display: 'flex',
-    alignItems: 'flex-end',
-    justifyContent: 'flex-end',
-    position: 'absolute' as const,
-    bottom: '24px',
-    right: '24px',
+    position: 'fixed' as const,
     zIndex: 1000,
     userSelect: 'none',
-    willChange: 'transform',
-    width: 'min(520px, calc(100vw - 40px))',
+    willChange: 'left, top',
     padding: 0,
+    transition: 'left 90ms linear, top 90ms linear',
+  },
+
+  dock: {
+    w: '100%',
+    display: 'flex',
+    alignItems: 'flex-end',
+    gap: '2',
+    p: '2',
+    borderRadius: '8px',
+    overflow: 'hidden',
+    border: '1px solid rgba(180, 199, 210, 0.34)',
+    boxShadow: '0 12px 36px rgba(0, 0, 0, 0.38)',
+    bg: 'rgba(14, 20, 24, 0.95)',
+    backdropFilter: 'blur(16px)',
+    css: { WebkitUserSelect: 'none' },
   },
 
   box: {
@@ -151,10 +161,14 @@ export const inputSubtitleStyles = {
   },
 
   iconButton: {
-    size: 'xs',
+    width: '40px',
+    height: '40px',
+    minW: '40px',
     variant: 'ghost',
-    color: 'whiteAlpha.800',
-    _hover: { bg: 'whiteAlpha.200' },
+    borderRadius: '6px',
+    color: '#b6c6ce',
+    _hover: { bg: '#25343c', color: '#eef4f6' },
+    _disabled: { color: '#56666f', cursor: 'not-allowed' },
   },
 
   inputBox: {
@@ -163,8 +177,8 @@ export const inputSubtitleStyles = {
   },
 
   input: {
-    minH: '58px',
-    maxH: '132px',
+    minH: '44px',
+    maxH: '108px',
     resize: 'none',
     bg: '#0b1114',
     color: '#edf2f4',
@@ -183,9 +197,9 @@ export const inputSubtitleStyles = {
   },
 
   sendButton: {
-    width: '44px',
-    height: '44px',
-    minW: '44px',
+    width: '40px',
+    height: '40px',
+    minW: '40px',
     bg: '#d7e5ec',
     color: '#142027',
     borderRadius: '6px',

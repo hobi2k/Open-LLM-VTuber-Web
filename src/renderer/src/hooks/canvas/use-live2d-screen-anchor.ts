@@ -6,6 +6,7 @@ import { HitAreaNameHead } from '../../../WebSDK/src/lappdefine';
 export interface Live2DScreenAnchor {
   x: number;
   y: number;
+  bottom: number;
   ready: boolean;
 }
 
@@ -16,6 +17,7 @@ export function useLive2DScreenAnchor(): Live2DScreenAnchor {
   const [anchor, setAnchor] = useState<Live2DScreenAnchor>(() => ({
     x: window.innerWidth / 2,
     y: Math.max(120, window.innerHeight * 0.22),
+    bottom: window.innerHeight * 0.78,
     ready: false,
   }));
 
@@ -38,6 +40,7 @@ export function useLive2DScreenAnchor(): Live2DScreenAnchor {
         : cubismModel.getDrawableIndex(model._modelSetting.getHitAreaId(headArea));
       let minX = Number.POSITIVE_INFINITY;
       let maxX = Number.NEGATIVE_INFINITY;
+      let minY = Number.POSITIVE_INFINITY;
       let maxY = Number.NEGATIVE_INFINITY;
       let headMinX = Number.POSITIVE_INFINITY;
       let headMaxX = Number.NEGATIVE_INFINITY;
@@ -51,6 +54,7 @@ export function useLive2DScreenAnchor(): Live2DScreenAnchor {
             if (Number.isFinite(x) && Number.isFinite(y)) {
               minX = Math.min(minX, x);
               maxX = Math.max(maxX, x);
+              minY = Math.min(minY, y);
               maxY = Math.max(maxY, y);
               if (drawable === headDrawable) {
                 headMinX = Math.min(headMinX, x);
@@ -61,7 +65,10 @@ export function useLive2DScreenAnchor(): Live2DScreenAnchor {
         }
       }
 
-      if (!Number.isFinite(minX) || !Number.isFinite(maxX) || !Number.isFinite(maxY)) return;
+      if (!Number.isFinite(minX)
+        || !Number.isFinite(maxX)
+        || !Number.isFinite(minY)
+        || !Number.isFinite(maxY)) return;
       const rect = canvas.getBoundingClientRect();
       const centerX = Number.isFinite(headMinX) && Number.isFinite(headMaxX)
         ? (headMinX + headMaxX) / 2
@@ -70,6 +77,7 @@ export function useLive2DScreenAnchor(): Live2DScreenAnchor {
         // Cubism's MVP output is normalized to -1...1 before viewport mapping.
         x: rect.left + ((centerX + 1) / 2) * rect.width,
         y: rect.top + ((1 - maxY) / 2) * rect.height,
+        bottom: rect.top + ((1 - minY) / 2) * rect.height,
         ready: true,
       };
 
@@ -77,6 +85,7 @@ export function useLive2DScreenAnchor(): Live2DScreenAnchor {
         previous.ready === next.ready
         && Math.abs(previous.x - next.x) < POSITION_EPSILON_PX
         && Math.abs(previous.y - next.y) < POSITION_EPSILON_PX
+        && Math.abs(previous.bottom - next.bottom) < POSITION_EPSILON_PX
           ? previous
           : next
       ));
