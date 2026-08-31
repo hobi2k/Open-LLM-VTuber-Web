@@ -19,6 +19,7 @@ import { VADProvider } from "./context/vad-context";
 import { Live2D } from "./components/canvas/live2d";
 import TitleBar from "./components/electron/title-bar";
 import { InputSubtitle } from "./components/electron/input-subtitle";
+import { Live2DSpeechBubble } from "./components/electron/live2d-speech-bubble";
 import { ProactiveSpeakProvider } from "./context/proactive-speak-context";
 import { ScreenCaptureProvider } from "./context/screen-capture-context";
 import { GroupProvider } from "./context/group-context";
@@ -142,7 +143,12 @@ function AppContent(): JSX.Element {
       )}
 
       {/* Conditional Rendering of Pet Mode UI */}
-      {mode === "pet" && <InputSubtitle />}
+      {mode === "pet" && (
+        <>
+          <Live2DSpeechBubble />
+          <InputSubtitle />
+        </>
+      )}
     </>
   );
 }
