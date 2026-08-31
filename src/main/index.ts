@@ -9,6 +9,7 @@ import {
 import { electronApp, optimizer } from "@electron-toolkit/utils";
 import { WindowManager } from "./window-manager";
 import { MenuManager } from "./menu-manager";
+import { startLocalBackend, stopLocalBackend } from "./backend-manager";
 
 let windowManager: WindowManager;
 let menuManager: MenuManager;
@@ -88,8 +89,10 @@ function setupIPC(): void {
   });
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   electronApp.setAppUserModelId("io.github.hobi2k.open-llm-vtuber");
+
+  await startLocalBackend();
 
   windowManager = new WindowManager();
   menuManager = new MenuManager((mode) => windowManager.setWindowMode(mode));
@@ -158,6 +161,7 @@ app.on("window-all-closed", () => {
 
 app.on("before-quit", () => {
   isQuitting = true;
+  stopLocalBackend();
   menuManager.destroy();
   globalShortcut.unregisterAll();
 });
