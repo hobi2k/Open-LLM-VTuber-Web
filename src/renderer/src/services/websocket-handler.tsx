@@ -1,6 +1,3 @@
-/* eslint-disable no-sparse-arrays */
-/* eslint-disable react-hooks/exhaustive-deps */
-// eslint-disable-next-line object-curly-newline
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { wsService, MessageEvent } from '@/services/websocket-service';
@@ -322,10 +319,6 @@ function WebSocketHandler({ children }: { children: React.ReactNode }) {
   }, [aiState, addAudioTask, appendHumanMessage, baseUrl, bgUrlContext, setAiState, setConfName, setConfUid, setConfigFiles, setCurrentHistoryUid, setHistoryList, setMessages, setModelInfo, setSubtitleText, startMic, stopMic, subtitleText, setSelfUid, setGroupMembers, setIsOwner, backendSynthComplete, setBackendSynthComplete, clearResponse, finishRunningReasoning, handleControlMessage, appendOrUpdateToolCallMessage, appendOrUpdateReasoningMessage, interrupt, setBrowserViewData, t]);
 
   useEffect(() => {
-    wsService.connect(wsUrl);
-  }, [wsUrl]);
-
-  useEffect(() => {
     const stateSubscription = wsService.onStateChange(setWsState);
     const messageSubscription = wsService.onMessage(handleWebSocketMessage);
     return () => {
@@ -333,6 +326,18 @@ function WebSocketHandler({ children }: { children: React.ReactNode }) {
       messageSubscription.unsubscribe();
     };
   }, [wsUrl, handleWebSocketMessage]);
+
+  useEffect(() => {
+    wsService.connect(wsUrl);
+  }, [wsUrl]);
+
+  useEffect(() => {
+    if (wsState !== 'CLOSED') return undefined;
+    const retry = window.setTimeout(() => {
+      if (wsService.getCurrentState() === 'CLOSED') wsService.connect(wsUrl);
+    }, 1500);
+    return () => window.clearTimeout(retry);
+  }, [wsState, wsUrl]);
 
   const webSocketContextValue = useMemo(() => ({
     sendMessage: wsService.sendMessage.bind(wsService),
