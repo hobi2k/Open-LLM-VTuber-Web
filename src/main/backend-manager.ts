@@ -97,7 +97,8 @@ export async function startLocalBackend(): Promise<boolean> {
     process.env.PATH,
   ].filter((value): value is string => Boolean(value)).join(delimiter);
 
-  backendProcess = spawn(python, [join(directory, "run_server.py")], {
+  // The bundled backend must not load user-site hooks from the desktop app context.
+  backendProcess = spawn(python, ["-s", join(directory, "run_server.py")], {
     cwd: directory,
     env: {
       ...process.env,
