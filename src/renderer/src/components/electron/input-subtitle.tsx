@@ -8,6 +8,7 @@ import {
 } from 'react-icons/lu';
 import {
   Box,
+  Flex,
   IconButton,
   Textarea,
 } from '@chakra-ui/react';
@@ -26,7 +27,7 @@ import { SlashCommandMenu } from '@/components/shared/slash-command-menu';
 import { IMAGE_ATTACHMENT_ACCEPT } from '@/context/image-attachment-context';
 import { ImageAttachmentStrip } from '@/components/shared/image-attachment-strip';
 
-const DOCK_WIDTH = 460;
+const DOCK_WIDTH = 620;
 const VIEWPORT_MARGIN = 16;
 const MODEL_GAP = 14;
 
@@ -94,7 +95,7 @@ export function InputSubtitle() {
     const input = inputRef.current;
     if (!input) return;
     input.style.height = '0px';
-    input.style.height = `${Math.min(Math.max(input.scrollHeight, 44), 108)}px`;
+    input.style.height = `${Math.min(Math.max(input.scrollHeight, 54), 140)}px`;
   }, [inputValue]);
 
   useEffect(() => {
@@ -146,14 +147,6 @@ export function InputSubtitle() {
       top={`${top}px`}
       width={`${width}px`}
     >
-      {attachments.length > 0 && (
-        <Box mb="1.5" px="1" maxW="100%">
-          <ImageAttachmentStrip
-            attachments={attachments}
-            onRemove={removeAttachment}
-          />
-        </Box>
-      )}
       <Box {...inputSubtitleStyles.dock}>
         {slash.open && (
           <SlashCommandMenu
@@ -163,41 +156,14 @@ export function InputSubtitle() {
             onHighlight={slash.setSelectedIndex}
           />
         )}
-        <IconButton
-          type="button"
-          aria-label={t('footer.attachImages')}
-          title={t('footer.attachImages')}
-          onClick={() => fileInputRef.current?.click()}
-          {...inputSubtitleStyles.iconButton}
-        >
-          <LuPaperclip size={17} />
-        </IconButton>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept={IMAGE_ATTACHMENT_ACCEPT}
-          multiple
-          hidden
-          onChange={handleFiles}
-        />
-        <IconButton
-          type="button"
-          aria-label={t('sidebar.windowMode')}
-          title={t('sidebar.windowMode')}
-          onClick={() => setMode('window')}
-          {...inputSubtitleStyles.iconButton}
-        >
-          <LuMonitor size={17} />
-        </IconButton>
-        <IconButton
-          type="button"
-          aria-label="Toggle microphone"
-          title="Toggle microphone"
-          onClick={handleMicToggle}
-          {...inputSubtitleStyles.iconButton}
-        >
-          {micOn ? <LuMic size={17} /> : <LuMicOff size={17} />}
-        </IconButton>
+        {attachments.length > 0 && (
+          <Box {...inputSubtitleStyles.attachmentTray}>
+            <ImageAttachmentStrip
+              attachments={attachments}
+              onRemove={removeAttachment}
+            />
+          </Box>
+        )}
         <Textarea
           ref={inputRef}
           value={inputValue}
@@ -212,25 +178,72 @@ export function InputSubtitle() {
           rows={1}
           {...inputSubtitleStyles.input}
         />
-        <IconButton
-          type="button"
-          aria-label="Interrupt"
-          title="Interrupt"
-          onClick={handleInterrupt}
-          disabled={aiState !== 'thinking-speaking'}
-          {...inputSubtitleStyles.iconButton}
-        >
-          <LuHand size={17} />
-        </IconButton>
-        <IconButton
-          type="submit"
-          aria-label={t('footer.send')}
-          title={t('footer.send')}
-          disabled={!inputValue.trim() && !attachments.length}
-          {...inputSubtitleStyles.sendButton}
-        >
-          <LuSend size={17} />
-        </IconButton>
+        <Flex {...inputSubtitleStyles.composerRow}>
+          <Flex {...inputSubtitleStyles.utilityGroup}>
+            <IconButton
+              type="button"
+              aria-label={t('footer.attachImages')}
+              title={t('footer.attachImages')}
+              onClick={() => fileInputRef.current?.click()}
+              {...inputSubtitleStyles.iconButton}
+            >
+              <LuPaperclip size={17} />
+            </IconButton>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept={IMAGE_ATTACHMENT_ACCEPT}
+              multiple
+              hidden
+              onChange={handleFiles}
+            />
+            <IconButton
+              type="button"
+              aria-label={t('sidebar.windowMode')}
+              title={t('sidebar.windowMode')}
+              onClick={() => setMode('window')}
+              {...inputSubtitleStyles.iconButton}
+            >
+              <LuMonitor size={17} />
+            </IconButton>
+            <IconButton
+              type="button"
+              aria-label={micOn ? t('footer.muteMic') : t('footer.unmuteMic')}
+              title={micOn ? t('footer.muteMic') : t('footer.unmuteMic')}
+              onClick={handleMicToggle}
+              {...inputSubtitleStyles.iconButton}
+              bg={micOn ? 'rgba(74, 149, 124, 0.2)' : 'transparent'}
+              color={micOn ? '#91ddc2' : '#9fb0b9'}
+            >
+              {micOn ? <LuMic size={17} /> : <LuMicOff size={17} />}
+            </IconButton>
+          </Flex>
+          <Flex {...inputSubtitleStyles.actionGroup}>
+            {aiState === 'thinking-speaking' && (
+              <IconButton
+                type="button"
+                aria-label={t('footer.interrupt')}
+                title={t('footer.interrupt')}
+                onClick={handleInterrupt}
+                {...inputSubtitleStyles.iconButton}
+                bg="rgba(155, 78, 84, 0.18)"
+                color="#ef9da3"
+                _hover={{ bg: 'rgba(155, 78, 84, 0.32)', color: '#ffd7da' }}
+              >
+                <LuHand size={17} />
+              </IconButton>
+            )}
+            <IconButton
+              type="submit"
+              aria-label={t('footer.send')}
+              title={t('footer.send')}
+              disabled={!inputValue.trim() && !attachments.length}
+              {...inputSubtitleStyles.sendButton}
+            >
+              <LuSend size={18} />
+            </IconButton>
+          </Flex>
+        </Flex>
       </Box>
     </Box>
   );
