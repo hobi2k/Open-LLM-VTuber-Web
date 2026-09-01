@@ -11,6 +11,8 @@ import { InputGroup } from '@/components/ui/input-group';
 import { footerStyles } from './footer-styles';
 import AIStateIndicator from './ai-state-indicator';
 import { useFooter } from '@/hooks/footer/use-footer';
+import { useRuntimeSlashCommands } from '@/hooks/utils/use-runtime-slash-commands';
+import { SlashCommandMenu } from '@/components/shared/slash-command-menu';
 
 // Type definitions
 interface FooterProps {
@@ -35,6 +37,7 @@ interface MessageInputProps {
   onKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void
   onCompositionStart: () => void
   onCompositionEnd: () => void
+  setValue: (value: string) => void
 }
 
 // Reusable components
@@ -99,12 +102,22 @@ const MessageInput = memo(({
   onKeyDown,
   onCompositionStart,
   onCompositionEnd,
+  setValue,
 }: MessageInputProps) => {
   const { t } = useTranslation();
+  const slash = useRuntimeSlashCommands(value, setValue);
 
   return (
     <InputGroup flex={1}>
       <Box position="relative" width="100%">
+        {slash.open && (
+          <SlashCommandMenu
+            commands={slash.commands}
+            selectedIndex={slash.selectedIndex}
+            onSelect={slash.select}
+            onHighlight={slash.setSelectedIndex}
+          />
+        )}
         <IconButton
           aria-label="Attach file"
           variant="ghost"
@@ -115,7 +128,9 @@ const MessageInput = memo(({
         <Textarea
           value={value}
           onChange={onChange}
-          onKeyDown={onKeyDown}
+          onKeyDown={(event) => {
+            if (!slash.handleKeyDown(event)) onKeyDown(event);
+          }}
           onCompositionStart={onCompositionStart}
           onCompositionEnd={onCompositionEnd}
           placeholder={t('footer.typeYourMessage')}
@@ -132,6 +147,7 @@ MessageInput.displayName = 'MessageInput';
 function Footer({ isCollapsed = false, onToggle }: FooterProps): JSX.Element {
   const {
     inputValue,
+    setInputValue,
     handleInputChange,
     handleKeyPress,
     handleCompositionStart,
@@ -160,6 +176,7 @@ function Footer({ isCollapsed = false, onToggle }: FooterProps): JSX.Element {
 
           <MessageInput
             value={inputValue}
+            setValue={setInputValue}
             onChange={handleInputChange}
             onKeyDown={handleKeyPress}
             onCompositionStart={handleCompositionStart}

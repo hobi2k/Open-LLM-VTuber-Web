@@ -11,6 +11,7 @@ export const useFooter = () => {
   const {
     inputText: inputValue,
     setInputText: handleChange,
+    setInputValue,
     handleKeyPress: handleKey,
     handleCompositionStart,
     handleCompositionEnd,
@@ -45,6 +46,7 @@ export const useFooter = () => {
 
   return {
     inputValue,
+    setInputValue,
     handleInputChange,
     handleKeyPress,
     handleCompositionStart,

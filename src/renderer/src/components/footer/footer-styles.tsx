@@ -25,7 +25,7 @@ export const footerStyles: {
       transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
       height: '100%',
       position: 'relative',
-      overflow: isCollapsed ? 'visible' : 'hidden',
+      overflow: 'visible',
       pb: '3',
     }),
     toggleButton: {

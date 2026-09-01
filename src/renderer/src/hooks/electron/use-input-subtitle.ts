@@ -9,6 +9,7 @@ export function useInputSubtitle() {
   const {
     inputText: inputValue,
     setInputText: handleChange,
+    setInputValue,
     handleKeyPress: handleKey,
     handleCompositionStart,
     handleCompositionEnd,
@@ -38,6 +39,7 @@ export function useInputSubtitle() {
 
   return {
     inputValue,
+    setInputValue,
     handleInputChange,
     handleKeyPress,
     handleCompositionStart,

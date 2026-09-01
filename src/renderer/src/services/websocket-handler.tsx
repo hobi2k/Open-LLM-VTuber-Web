@@ -19,6 +19,7 @@ import { useLocalStorage } from '@/hooks/utils/use-local-storage';
 import { useGroup } from '@/context/group-context';
 import { useInterrupt } from '@/hooks/utils/use-interrupt';
 import { useBrowser } from '@/context/browser-context';
+import { releasePermissionSubmission } from '@/utils/permission-submission';
 
 function WebSocketHandler({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
@@ -35,6 +36,7 @@ function WebSocketHandler({ children }: { children: React.ReactNode }) {
     appendOrUpdateToolCallMessage,
     appendOrUpdateReasoningMessage,
     appendOrUpdateActivityMessage,
+    appendOrUpdatePermissionMessage,
     finishRunningReasoning,
   } = useChatHistory();
   const { addAudioTask } = useAudioTask();
@@ -365,10 +367,38 @@ function WebSocketHandler({ children }: { children: React.ReactNode }) {
           console.warn('Received incomplete agent activity message:', message);
         }
         break;
+      case 'permission-request':
+        if (message.request_id) {
+          appendOrUpdatePermissionMessage({
+            request_id: message.request_id,
+            type: 'permission',
+            role: 'ai',
+            runtime: message.runtime,
+            tool_name: message.tool_name,
+            title: message.title,
+            description: message.description,
+            permission_input: message.input,
+            options: message.options,
+            status: 'running',
+            timestamp: new Date().toISOString(),
+          });
+        }
+        break;
+      case 'permission-resolved':
+        if (message.request_id) {
+          releasePermissionSubmission(message.request_id);
+          appendOrUpdatePermissionMessage({
+            request_id: message.request_id,
+            decision: message.decision,
+            status: message.success ? 'completed' : 'error',
+            timestamp: new Date().toISOString(),
+          });
+        }
+        break;
       default:
         console.warn('Unknown message type:', message.type);
     }
-  }, [aiState, addAudioTask, appendHumanMessage, baseUrl, bgUrlContext, setAiState, setConfName, setConfUid, setConfigFiles, setCurrentHistoryUid, setHistoryList, setMessages, setModelInfo, setSubtitleText, startMic, stopMic, subtitleText, setSelfUid, setGroupMembers, setIsOwner, backendSynthComplete, setBackendSynthComplete, clearResponse, finishRunningReasoning, handleControlMessage, appendOrUpdateToolCallMessage, appendOrUpdateReasoningMessage, appendOrUpdateActivityMessage, interrupt, setBrowserViewData, t]);
+  }, [aiState, addAudioTask, appendHumanMessage, baseUrl, bgUrlContext, setAiState, setConfName, setConfUid, setConfigFiles, setCurrentHistoryUid, setHistoryList, setMessages, setModelInfo, setSubtitleText, startMic, stopMic, subtitleText, setSelfUid, setGroupMembers, setIsOwner, backendSynthComplete, setBackendSynthComplete, clearResponse, finishRunningReasoning, handleControlMessage, appendOrUpdateToolCallMessage, appendOrUpdateReasoningMessage, appendOrUpdateActivityMessage, appendOrUpdatePermissionMessage, interrupt, setBrowserViewData, t]);
 
   useEffect(() => {
     const stateSubscription = wsService.onStateChange(setWsState);

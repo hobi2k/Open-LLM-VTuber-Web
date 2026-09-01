@@ -5,10 +5,10 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 // @ts-nocheck
 import { useEffect, useRef, useCallback, useState, RefObject } from "react";
+import { initializeLive2D } from '@cubismsdksamples/main';
 import { ModelInfo } from "@/context/live2d-config-context";
 import { updateModelConfig } from '../../../WebSDK/src/lappdefine';
 import { LAppDelegate } from '../../../WebSDK/src/lappdelegate';
-import { initializeLive2D } from '@cubismsdksamples/main';
 import { useMode } from '@/context/mode-context';
 
 interface UseLive2DModelProps {
@@ -102,7 +102,7 @@ export const useLive2DModel = ({
   const prevModelUrlRef = useRef<string | null>(null);
   const previousModeRef = useRef(mode);
   const isHoveringModelRef = useRef(false);
-  const electronApi = (window as any).electron;
+  const hoverApi = (window as any).api;
 
   // --- State for Tap vs Drag ---
   const mouseDownTimeRef = useRef<number>(0);
@@ -334,7 +334,7 @@ export const useLive2DModel = ({
     // --- End Continue Drag Logic ---
 
     // --- Pet Hover Logic (Unchanged) ---
-    if (isPet && !isDragging && !isPotentialTapRef.current && electronApi && adapter && view && model && canvasRef.current) {
+    if (isPet && !isDragging && !isPotentialTapRef.current && hoverApi && adapter && view && model && canvasRef.current) {
       const canvas = canvasRef.current;
       const rect = canvas.getBoundingClientRect();
       const x = e.clientX - rect.left;
@@ -349,11 +349,11 @@ export const useLive2DModel = ({
 
       if (currentHitState !== isHoveringModelRef.current) {
         isHoveringModelRef.current = currentHitState;
-        electronApi.ipcRenderer.send('update-component-hover', 'live2d-model', currentHitState);
+        hoverApi.updateComponentHover('live2d-model', currentHitState);
       }
     }
     // --- End Pet Hover Logic ---
-  }, [isPet, isDragging, electronApi, canvasRef]);
+  }, [isPet, isDragging, hoverApi, canvasRef]);
 
   const handleMouseUp = useCallback((e: React.MouseEvent) => {
     const adapter = (window as any).getLAppAdapter?.();
@@ -416,17 +416,24 @@ export const useLive2DModel = ({
       isPotentialTapRef.current = false;
     }
     // --- Pet Hover Logic (Unchanged) ---
-    if (isPet && electronApi && isHoveringModelRef.current) {
+    if (isPet && hoverApi && isHoveringModelRef.current) {
       isHoveringModelRef.current = false;
-      electronApi.ipcRenderer.send('update-component-hover', 'live2d-model', false);
+      hoverApi.updateComponentHover('live2d-model', false);
     }
-  }, [isPet, isDragging, electronApi, handleMouseUp]);
+  }, [isPet, isDragging, hoverApi, handleMouseUp]);
 
   useEffect(() => {
-    if (!isPet && electronApi && isHoveringModelRef.current) {
+    if (!isPet && hoverApi && isHoveringModelRef.current) {
       isHoveringModelRef.current = false;
+      hoverApi.updateComponentHover('live2d-model', false);
     }
-  }, [isPet, electronApi]);
+    return () => {
+      if (hoverApi && isHoveringModelRef.current) {
+        isHoveringModelRef.current = false;
+        hoverApi.updateComponentHover('live2d-model', false);
+      }
+    };
+  }, [isPet, hoverApi]);
 
   // Expose motion debugging functions to window for console testing
   useEffect(() => {
@@ -498,20 +505,19 @@ export const useLive2DModel = ({
           // Get all motion groups
           const groups = setting._json?.FileReferences?.Motions;
           if (groups) {
-            for (const groupName in groups) {
-              const motions = groups[groupName];
+            Object.entries(groups).forEach(([groupName, motions]: [string, any[]]) => {
               motionGroups.push({
                 name: groupName,
                 count: motions.length,
                 motions: motions.map((motion: any, index: number) => ({
                   index,
-                  file: motion.File
-                }))
+                  file: motion.File,
+                })),
               });
-            }
+            });
           }
         }
-        
+
         console.log('Available motion groups:', motionGroups);
         return motionGroups;
       } catch (error) {
@@ -539,7 +545,7 @@ Live2DDebug.getMotionInfo()  // See available motions
 Live2DDebug.playMotion("", 0)  // Play first motion from default group
 Live2DDebug.playRandomMotion("")  // Play random motion from default group
         `);
-      }
+      },
     };
 
     console.log('Live2D Debug functions exposed to window.Live2DDebug');

@@ -19,6 +19,8 @@ import { useDraggable } from '@/hooks/electron/use-draggable';
 import { useLive2DScreenAnchor } from '@/hooks/canvas/use-live2d-screen-anchor';
 import { inputSubtitleStyles } from './electron-style';
 import { useMode } from '@/context/mode-context';
+import { useRuntimeSlashCommands } from '@/hooks/utils/use-runtime-slash-commands';
+import { SlashCommandMenu } from '@/components/shared/slash-command-menu';
 
 const DOCK_WIDTH = 460;
 const VIEWPORT_MARGIN = 16;
@@ -28,6 +30,7 @@ export function InputSubtitle() {
   const { t } = useTranslation();
   const {
     inputValue,
+    setInputValue,
     handleInputChange,
     handleKeyPress,
     handleCompositionStart,
@@ -48,6 +51,7 @@ export function InputSubtitle() {
   const [isVisible, setIsVisible] = useState(true);
   const [dockHeight, setDockHeight] = useState(60);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const slash = useRuntimeSlashCommands(inputValue, setInputValue);
 
   const handleClose = useCallback(() => {
     if (isPet) {
@@ -126,6 +130,14 @@ export function InputSubtitle() {
       width={`${width}px`}
     >
       <Box {...inputSubtitleStyles.dock}>
+        {slash.open && (
+          <SlashCommandMenu
+            commands={slash.commands}
+            selectedIndex={slash.selectedIndex}
+            onSelect={slash.select}
+            onHighlight={slash.setSelectedIndex}
+          />
+        )}
         <IconButton
           type="button"
           aria-label={t('sidebar.windowMode')}
@@ -148,7 +160,9 @@ export function InputSubtitle() {
           ref={inputRef}
           value={inputValue}
           onChange={handleInputChange}
-          onKeyDown={handleKeyPress}
+          onKeyDown={(event) => {
+            if (!slash.handleKeyDown(event)) handleKeyPress(event);
+          }}
           onCompositionStart={handleCompositionStart}
           onCompositionEnd={handleCompositionEnd}
           placeholder={t('footer.typeYourMessage')}

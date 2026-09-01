@@ -37,6 +37,7 @@ interface CLIConnection {
 
 export type LaunchMode = "direct" | "omlx";
 export type InteractionMode = "character" | "coding";
+export type PermissionMode = "disabled" | "manual" | "auto" | "plan";
 export type ReasoningEffort =
   | "default"
   | "none"
@@ -71,7 +72,16 @@ export interface RuntimeSession {
 
 export type RuntimeCatalogKey = "opencode" | "claude_code" | "codex" | "hermes";
 
-interface RuntimeCatalog {
+export interface RuntimeCommand {
+  name: string;
+  description: string;
+  source: "command" | "skill" | "mcp" | string;
+  runtime: RuntimeCatalogKey;
+  invocation: string;
+  input_hint?: string;
+}
+
+export interface RuntimeCatalog {
   executables: Record<string, CLIConnection>;
   omlx: {
     available: boolean;
@@ -90,6 +100,7 @@ interface RuntimeCatalog {
     "opencode" | "claude_code" | "codex" | "hermes",
     RuntimeSession[]
   >;
+  commands: Record<RuntimeCatalogKey, RuntimeCommand[]>;
 }
 
 interface RuntimeConnections {
@@ -112,6 +123,7 @@ export interface OpenCodeRuntimeSettings {
   timeout: number;
   keep_sessions: boolean;
   allow_tools: boolean;
+  permission_mode: PermissionMode;
   show_reasoning: boolean;
   has_server_password: boolean;
   connection: OpenCodeConnection;
@@ -129,6 +141,7 @@ export interface CLIRuntimeSettings {
   show_reasoning: boolean;
   reasoning_effort: ReasoningEffort;
   allow_tools: boolean;
+  permission_mode: PermissionMode;
   connection: CLIConnection;
 }
 
@@ -160,6 +173,7 @@ const defaultCatalog: RuntimeCatalog = {
   models: { opencode: [], claude_code: [], codex: [], hermes: [] },
   projects: [],
   sessions: { opencode: [], claude_code: [], codex: [], hermes: [] },
+  commands: { opencode: [], claude_code: [], codex: [], hermes: [] },
 };
 
 const defaultRuntimeSettings: AgentRuntimeSettings = {
@@ -177,6 +191,7 @@ const defaultRuntimeSettings: AgentRuntimeSettings = {
     timeout: 300,
     keep_sessions: false,
     allow_tools: false,
+    permission_mode: "disabled",
     show_reasoning: false,
     has_server_password: false,
     connection: {
@@ -204,6 +219,7 @@ const defaultRuntimeSettings: AgentRuntimeSettings = {
     show_reasoning: false,
     reasoning_effort: "default",
     allow_tools: false,
+    permission_mode: "disabled",
     connection: unavailableCLI,
   },
   codex: {
@@ -218,6 +234,7 @@ const defaultRuntimeSettings: AgentRuntimeSettings = {
     show_reasoning: false,
     reasoning_effort: "default",
     allow_tools: false,
+    permission_mode: "disabled",
     connection: unavailableCLI,
   },
   hermes: {
@@ -232,6 +249,7 @@ const defaultRuntimeSettings: AgentRuntimeSettings = {
     show_reasoning: false,
     reasoning_effort: "default",
     allow_tools: false,
+    permission_mode: "disabled",
     connection: unavailableCLI,
   },
 };

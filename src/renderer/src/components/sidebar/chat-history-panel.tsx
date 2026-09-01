@@ -3,8 +3,10 @@ import {
   Avatar,
   Badge,
   Box,
+  Button,
   Flex,
   Icon,
+  Input,
   Spinner,
   Stack,
   Text,
@@ -18,6 +20,7 @@ import {
   HiCpuChip,
   HiDocumentText,
   HiExclamationCircle,
+  HiLockClosed,
   HiWrenchScrewdriver,
 } from "react-icons/hi2";
 import { useChatHistory } from "@/context/chat-history-context";
@@ -29,6 +32,18 @@ import {
   activityOutput,
   activityTitle,
 } from "@/utils/agent-activity";
+import {
+  hasPermissionAnswers,
+  PermissionAnswers,
+  permissionAnswerPayload,
+  PermissionQuestionFields,
+  permissionQuestions,
+} from "@/components/shared/permission-question-fields";
+import {
+  claimPermissionSubmission,
+  isPermissionSubmissionPending,
+  releasePermissionSubmission,
+} from "@/utils/permission-submission";
 
 function formatTime(timestamp: string): string {
   const date = new Date(timestamp);
@@ -351,6 +366,131 @@ function ActivityMessage({ message }: { message: Message }): JSX.Element {
   );
 }
 
+function PermissionMessage({ message }: { message: Message }): JSX.Element {
+  const { t } = useTranslation();
+  const { sendMessage, wsState } = useWebSocket();
+  const [answer, setAnswer] = useState("");
+  const [questionAnswers, setQuestionAnswers] = useState<PermissionAnswers>({});
+  const [submitting, setSubmitting] = useState(
+    isPermissionSubmissionPending(message.request_id),
+  );
+  const pending = message.status === "running";
+  const isQuestion = message.tool_name === "user_input";
+  const questions = permissionQuestions(message.permission_input);
+  const details = activityInput(message.permission_input);
+  const answerReady = questions.length
+    ? hasPermissionAnswers(questions, questionAnswers)
+    : Boolean(answer.trim());
+  const answerPayload = questions.length
+    ? permissionAnswerPayload(questionAnswers)
+    : answer.trim();
+
+  const respond = (decision: "once" | "always" | "reject"): void => {
+    if (!claimPermissionSubmission(message.request_id)) return;
+    setSubmitting(true);
+    const sent = sendMessage({
+      type: "permission-response",
+      request_id: message.request_id,
+      decision,
+      message: isQuestion && decision !== "reject" ? answerPayload : "",
+    });
+    if (!sent) {
+      releasePermissionSubmission(message.request_id);
+      setSubmitting(false);
+    }
+  };
+
+  useEffect(() => {
+    if (message.status === "running") return;
+    releasePermissionSubmission(message.request_id);
+    setSubmitting(false);
+  }, [message.request_id, message.status]);
+
+  useEffect(() => {
+    if (wsState !== "CLOSED") return;
+    releasePermissionSubmission(message.request_id);
+    setSubmitting(false);
+  }, [message.request_id, wsState]);
+
+  return (
+    <Box
+      ml="10"
+      mr="2"
+      minW="0"
+      border="1px solid #5b4930"
+      borderLeft="3px solid #d4b36b"
+      borderRadius="6px"
+      bg="#1d1a14"
+      px="3"
+      py="3"
+    >
+      <Flex align="flex-start" gap="2.5" minW="0">
+        <Icon as={HiLockClosed} color="#e1c27c" boxSize="4" mt="0.5" />
+        <Box minW="0" flex="1">
+          <Text color="#f1e3c4" fontSize="xs" fontWeight="semibold" overflowWrap="anywhere">
+            {message.title || message.tool_name || t("sidebar.permissionRequest")}
+          </Text>
+          <Text color="#a89572" fontSize="2xs" mt="0.5">
+            {[message.runtime || "runtime", message.tool_name || "tool"].join(" · ")}
+          </Text>
+        </Box>
+      </Flex>
+      {message.description && (
+        <Text color="#c8b995" fontSize="xs" lineHeight="1.55" mt="2" whiteSpace="pre-wrap">
+          {message.description}
+        </Text>
+      )}
+      {details && !isQuestion && (
+        <ActivityDetail label={t("sidebar.activityInput")} value={details} mono />
+      )}
+      {isQuestion && pending && questions.length > 0 && (
+        <PermissionQuestionFields
+          input={message.permission_input}
+          answers={questionAnswers}
+          onChange={setQuestionAnswers}
+          placeholder={t("sidebar.permissionAnswer")}
+        />
+      )}
+      {isQuestion && pending && questions.length === 0 && (
+        <Input
+          value={answer}
+          onChange={(event) => setAnswer(event.target.value)}
+          placeholder={t("sidebar.permissionAnswer")}
+          mt="2.5"
+          size="sm"
+          borderColor="#5b4930"
+          bg="#11100d"
+        />
+      )}
+      {pending ? (
+        <Flex gap="2" mt="3" wrap="wrap">
+          {(message.options || []).map((option) => (
+            <Button
+              key={option.id}
+              size="xs"
+              variant={option.id === "reject" ? "outline" : "solid"}
+              bg={option.id === "reject" ? "transparent" : "#d7e7f8"}
+              color={option.id === "reject" ? "#e6a1a6" : "#11181d"}
+              borderColor={option.id === "reject" ? "#704247" : "#d7e7f8"}
+              disabled={submitting
+                || (isQuestion && option.id !== "reject" && !answerReady)}
+              onClick={() => respond(option.id)}
+            >
+              {option.label}
+            </Button>
+          ))}
+        </Flex>
+      ) : (
+        <Text color={message.status === "error" ? "#ef8a90" : "#72d6a2"} fontSize="xs" mt="2.5">
+          {message.decision === "reject"
+            ? t("sidebar.permissionRejected")
+            : t("sidebar.permissionApproved")}
+        </Text>
+      )}
+    </Box>
+  );
+}
+
 function ChatHistoryPanel(): JSX.Element {
   const { t } = useTranslation();
   const { messages } = useChatHistory();
@@ -362,7 +502,8 @@ function ChatHistoryPanel(): JSX.Element {
       (message) => Boolean(message.content) ||
           message.type === "reasoning" ||
           message.type === "tool_call_status" ||
-          message.type === "agent_activity",
+          message.type === "agent_activity" ||
+          message.type === "permission",
     ),
     [messages],
   );
@@ -463,6 +604,9 @@ function ChatHistoryPanel(): JSX.Element {
               }
               if (message.type === "agent_activity") {
                 return <ActivityMessage key={message.id} message={message} />;
+              }
+              if (message.type === "permission") {
+                return <PermissionMessage key={message.id} message={message} />;
               }
 
               const isAI = message.role === "ai";

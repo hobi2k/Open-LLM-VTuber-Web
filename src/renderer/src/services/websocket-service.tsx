@@ -36,7 +36,7 @@ export interface Message {
   avatar?: string;
 
   // Fields for different message types (make optional)
-  type?: 'text' | 'tool_call_status' | 'reasoning' | 'agent_activity';
+  type?: 'text' | 'tool_call_status' | 'reasoning' | 'agent_activity' | 'permission';
   reasoning_id?: string;
   tool_id?: string; // Specific to tool calls
   tool_name?: string; // Specific to tool calls
@@ -49,6 +49,27 @@ export interface Message {
   input?: string;
   output?: string;
   diff?: string;
+  request_id?: string;
+  runtime?: string;
+  description?: string;
+  permission_input?: unknown;
+  options?: { id: 'once' | 'always' | 'reject'; label: string }[];
+  decision?: 'once' | 'always' | 'reject';
+}
+
+export interface RuntimeQuestionOption {
+  label: string;
+  description?: string;
+}
+
+export interface RuntimeQuestion {
+  id?: string;
+  header?: string;
+  question: string;
+  options?: RuntimeQuestionOption[];
+  multiple?: boolean;
+  multiSelect?: boolean;
+  custom?: boolean;
 }
 
 export interface Actions {
@@ -73,6 +94,12 @@ export interface MessageEvent {
   input?: string;
   output?: string;
   diff?: string;
+  request_id?: string;
+  runtime?: string;
+  description?: string;
+  permission_input?: unknown;
+  options?: { id: 'once' | 'always' | 'reject'; label: string }[];
+  decision?: 'once' | 'always' | 'reject';
   audio?: string;
   volumes?: number[];
   slice_length?: number;
@@ -203,17 +230,18 @@ class WebSocketService {
     }
   }
 
-  sendMessage(message: object) {
+  sendMessage(message: object): boolean {
     if (this.ws?.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(message));
-    } else {
-      console.warn('WebSocket is not open. Unable to send message:', message);
-      toaster.create({
-        title: getTranslation()('error.websocketNotOpen'),
-        type: 'error',
-        duration: 2000,
-      });
+      return true;
     }
+    console.warn('WebSocket is not open. Unable to send message:', message);
+    toaster.create({
+      title: getTranslation()('error.websocketNotOpen'),
+      type: 'error',
+      duration: 2000,
+    });
+    return false;
   }
 
   onMessage(callback: (message: MessageEvent) => void) {

@@ -47,9 +47,9 @@ function readableOutput(value: unknown): string {
 }
 
 function readableInput(value: unknown): string {
-  if (typeof value !== 'string') return '';
-  const parsed = parseJson(value);
-  if (!isRecord(parsed)) return clip(value);
+  if (value === null || value === undefined) return '';
+  const parsed = typeof value === 'string' ? parseJson(value) : value;
+  if (!isRecord(parsed)) return readableOutput(value);
 
   const fields = [
     'query', 'q', 'url', 'pattern', 'selector', 'target',
@@ -65,8 +65,8 @@ function readableInput(value: unknown): string {
   return clip(fields.map(([key, item]) => `${key}: ${item}`).join('\n'));
 }
 
-export function activityInput(value?: string): string {
-  return value ? readableInput(value) : '';
+export function activityInput(value?: unknown): string {
+  return value === undefined ? '' : readableInput(value);
 }
 
 export function activityOutput(value?: string): string {
@@ -76,13 +76,13 @@ export function activityOutput(value?: string): string {
 export function activityTitle(
   title?: string,
   toolName?: string,
-  input?: string,
+  input?: unknown,
 ): string {
   const fallback = title || toolName || 'Tool';
   if (!input || !toolName || fallback.toLowerCase() !== toolName.toLowerCase()) {
     return fallback;
   }
-  const parsed = parseJson(input);
+  const parsed = typeof input === 'string' ? parseJson(input) : input;
   if (!isRecord(parsed)) return fallback;
   return ['title', 'description', 'label']
     .map((key) => (typeof parsed[key] === 'string' ? parsed[key].trim() : ''))

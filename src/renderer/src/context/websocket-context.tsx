@@ -17,7 +17,7 @@ export interface HistoryInfo {
 }
 
 interface WebSocketContextProps {
-  sendMessage: (message: object) => void;
+  sendMessage: (message: object) => boolean;
   wsState: string;
   reconnect: () => void;
   wsUrl: string;

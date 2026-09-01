@@ -18,6 +18,7 @@ interface ChatHistoryState {
   appendOrUpdateToolCallMessage: (toolMessageData: Partial<Message>) => void; // Accept partial data
   appendOrUpdateReasoningMessage: (reasoningData: Partial<Message>) => void;
   appendOrUpdateActivityMessage: (activityData: Partial<Message>) => void;
+  appendOrUpdatePermissionMessage: (permissionData: Partial<Message>) => void;
   finishRunningReasoning: () => void;
   clearReasoningMessages: () => void;
   setMessages: (messages: Message[]) => void; // Use the unified Message type
@@ -236,6 +237,44 @@ export function ChatHistoryProvider({ children }: { children: React.ReactNode })
     });
   }, []);
 
+  const appendOrUpdatePermissionMessage = useCallback((permissionData: Partial<Message>) => {
+    if (!permissionData.request_id) return;
+    setMessages((previous) => {
+      const index = previous.findIndex(
+        (message) => message.type === 'permission'
+          && message.request_id === permissionData.request_id,
+      );
+      if (index === -1) {
+        return [...previous, {
+          id: `permission-${permissionData.request_id}`,
+          request_id: permissionData.request_id,
+          role: 'ai',
+          type: 'permission',
+          runtime: permissionData.runtime,
+          tool_name: permissionData.tool_name,
+          title: permissionData.title,
+          description: permissionData.description,
+          permission_input: permissionData.permission_input,
+          options: permissionData.options,
+          content: permissionData.content || '',
+          status: permissionData.status || 'running',
+          timestamp: permissionData.timestamp || new Date().toISOString(),
+        }];
+      }
+      if (
+        previous[index].status === 'completed'
+        && permissionData.status === 'error'
+      ) return previous;
+      const updated = [...previous];
+      updated[index] = {
+        ...updated[index],
+        ...permissionData,
+        timestamp: permissionData.timestamp || new Date().toISOString(),
+      };
+      return updated;
+    });
+  }, []);
+
   const finishRunningReasoning = useCallback(() => {
     setMessages((previous) => previous.map((message) => (
       message.type === 'reasoning' && message.status === 'running'
@@ -301,6 +340,7 @@ export function ChatHistoryProvider({ children }: { children: React.ReactNode })
       appendOrUpdateToolCallMessage, // Add to context value
       appendOrUpdateReasoningMessage,
       appendOrUpdateActivityMessage,
+      appendOrUpdatePermissionMessage,
       finishRunningReasoning,
       clearReasoningMessages,
       setMessages,
@@ -322,6 +362,7 @@ export function ChatHistoryProvider({ children }: { children: React.ReactNode })
       appendOrUpdateToolCallMessage, // Add dependency
       appendOrUpdateReasoningMessage,
       appendOrUpdateActivityMessage,
+      appendOrUpdatePermissionMessage,
       finishRunningReasoning,
       clearReasoningMessages,
       updateHistoryList,

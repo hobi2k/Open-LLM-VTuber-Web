@@ -4,15 +4,19 @@ import {
   LuFilePenLine,
   LuLoaderCircle,
   LuMessageCircle,
+  LuShieldCheck,
   LuTerminal,
   LuWrench,
 } from 'react-icons/lu';
-import { Box, Flex, Icon, Text } from '@chakra-ui/react';
+import {
+  Box, Button, Flex, Icon, Input, Text,
+} from '@chakra-ui/react';
 import {
   ComponentType, useEffect, useMemo, useRef, useState,
 } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useChatHistory } from '@/context/chat-history-context';
+import { useWebSocket } from '@/context/websocket-context';
 import { useAiState } from '@/context/ai-state-context';
 import { useLive2DScreenAnchor } from '@/hooks/canvas/use-live2d-screen-anchor';
 import { Message } from '@/services/websocket-service';
@@ -21,8 +25,20 @@ import {
   activityOutput,
   activityTitle,
 } from '@/utils/agent-activity';
+import {
+  hasPermissionAnswers,
+  PermissionAnswers,
+  permissionAnswerPayload,
+  PermissionQuestionFields,
+  permissionQuestions,
+} from '@/components/shared/permission-question-fields';
+import {
+  claimPermissionSubmission,
+  isPermissionSubmissionPending,
+  releasePermissionSubmission,
+} from '@/utils/permission-submission';
 
-type BubbleKind = 'reasoning' | 'command' | 'file' | 'tool' | 'response';
+type BubbleKind = 'reasoning' | 'command' | 'file' | 'tool' | 'response' | 'permission';
 
 interface BubbleContent {
   id: string;
@@ -30,6 +46,7 @@ interface BubbleContent {
   label: string;
   text: string;
   status: Message['status'];
+  message?: Message;
 }
 
 const MAX_BUBBLE_TEXT = 2400;
@@ -44,6 +61,9 @@ function recentText(value: string): string {
 }
 
 function messageText(message: Message): string {
+  if (message.type === 'permission') {
+    return recentText(message.description || message.title || message.tool_name || 'Permission request');
+  }
   if (message.type !== 'agent_activity') return recentText(message.content);
 
   const title = activityTitle(message.title, message.tool_name, message.input);
@@ -67,6 +87,7 @@ function latestDisplayMessage(messages: Message[]): Message | undefined {
     .filter((message) => message.role === 'ai' && (
       message.type === 'reasoning'
       || message.type === 'agent_activity'
+      || message.type === 'permission'
       || (message.type === 'text' && Boolean(message.content.trim()))
     ))
     .map((message, index) => ({ message, index }))
@@ -82,17 +103,22 @@ function bubbleIcon(kind: BubbleKind): ComponentType<{ size?: number }> {
   if (kind === 'command') return LuTerminal;
   if (kind === 'file') return LuFilePenLine;
   if (kind === 'tool') return LuWrench;
+  if (kind === 'permission') return LuShieldCheck;
   return LuMessageCircle;
 }
 
 export function Live2DSpeechBubble(): JSX.Element | null {
   const { t } = useTranslation();
   const { messages } = useChatHistory();
+  const { sendMessage, wsState } = useWebSocket();
   const { aiState, isThinkingSpeaking } = useAiState();
   const anchor = useLive2DScreenAnchor();
   const bubbleRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const [bubbleHeight, setBubbleHeight] = useState(0);
+  const [answer, setAnswer] = useState('');
+  const [questionAnswers, setQuestionAnswers] = useState<PermissionAnswers>({});
+  const [submitting, setSubmitting] = useState(false);
 
   const bubble = useMemo<BubbleContent | null>(() => {
     const latest = latestDisplayMessage(messages);
@@ -131,6 +157,17 @@ export function Live2DSpeechBubble(): JSX.Element | null {
       };
     }
 
+    if (latest.type === 'permission') {
+      return {
+        id: latest.id,
+        kind: 'permission',
+        label: latest.title || t('sidebar.permissionRequest'),
+        text: messageText(latest),
+        status: latest.status,
+        message: latest,
+      };
+    }
+
     return {
       id: latest.id,
       kind: 'response',
@@ -139,6 +176,30 @@ export function Live2DSpeechBubble(): JSX.Element | null {
       status: aiState === 'thinking-speaking' ? 'running' : 'completed',
     };
   }, [aiState, isThinkingSpeaking, messages, t]);
+
+  const interactive = bubble?.kind === 'permission' && bubble.status === 'running';
+
+  useEffect(() => {
+    setAnswer('');
+    setQuestionAnswers({});
+    setSubmitting(isPermissionSubmissionPending(bubble?.message?.request_id));
+  }, [bubble?.id]);
+
+  useEffect(() => {
+    if (bubble?.status === 'running') return;
+    releasePermissionSubmission(bubble?.message?.request_id);
+    setSubmitting(false);
+  }, [bubble?.message?.request_id, bubble?.status]);
+
+  useEffect(() => {
+    if (wsState !== 'CLOSED') return;
+    releasePermissionSubmission(bubble?.message?.request_id);
+    setSubmitting(false);
+  }, [bubble?.message?.request_id, wsState]);
+
+  useEffect(() => () => {
+    if (interactive) window.api?.updateComponentHover('live2d-speech-bubble', false);
+  }, [interactive]);
 
   useEffect(() => {
     const element = bubbleRef.current;
@@ -171,8 +232,33 @@ export function Live2DSpeechBubble(): JSX.Element | null {
     file: '#d4b980',
     tool: '#d4b980',
     response: '#86cfa9',
+    permission: '#e3c27a',
   };
   const accent = bubble.status === 'error' ? '#ef8f96' : accentByKind[bubble.kind];
+  const questions = permissionQuestions(bubble.message?.permission_input);
+  const answerReady = questions.length
+    ? hasPermissionAnswers(questions, questionAnswers)
+    : Boolean(answer.trim());
+  const answerPayload = questions.length
+    ? permissionAnswerPayload(questionAnswers)
+    : answer.trim();
+  const respond = (decision: string): void => {
+    const requestId = bubble.message?.request_id;
+    if (!claimPermissionSubmission(requestId)) return;
+    setSubmitting(true);
+    const sent = sendMessage({
+      type: 'permission-response',
+      request_id: requestId,
+      decision,
+      message: bubble.message?.tool_name === 'user_input'
+        ? answerPayload
+        : '',
+    });
+    if (!sent) {
+      releasePermissionSubmission(requestId);
+      setSubmitting(false);
+    }
+  };
 
   return (
     <Box
@@ -185,7 +271,13 @@ export function Live2DSpeechBubble(): JSX.Element | null {
       top={`${top}px`}
       width={`${width}px`}
       zIndex={900}
-      pointerEvents="none"
+      pointerEvents={interactive ? 'auto' : 'none'}
+      onMouseEnter={() => {
+        if (interactive) window.api?.updateComponentHover('live2d-speech-bubble', true);
+      }}
+      onMouseLeave={() => {
+        if (interactive) window.api?.updateComponentHover('live2d-speech-bubble', false);
+      }}
       opacity={anchor.ready ? 1 : 0.96}
       bg="rgba(14, 20, 24, 0.96)"
       border="1px solid rgba(190, 208, 218, 0.42)"
@@ -220,6 +312,50 @@ export function Live2DSpeechBubble(): JSX.Element | null {
       >
         {bubble.text}
       </Box>
+      {interactive && bubble.message && (
+        <Box mt="2.5" pt="2.5" borderTop="1px solid rgba(227, 194, 122, 0.24)">
+          {bubble.message.tool_name === 'user_input' && questions.length > 0 && (
+            <PermissionQuestionFields
+              input={bubble.message.permission_input}
+              answers={questionAnswers}
+              onChange={setQuestionAnswers}
+              placeholder={t('sidebar.permissionAnswer')}
+              compact
+            />
+          )}
+          {bubble.message.tool_name === 'user_input' && questions.length === 0 && (
+            <Input
+              value={answer}
+              onChange={(event) => setAnswer(event.target.value)}
+              placeholder={t('sidebar.permissionAnswer')}
+              size="sm"
+              mb="2"
+              bg="rgba(0, 0, 0, 0.24)"
+              borderColor="rgba(227, 194, 122, 0.4)"
+            />
+          )}
+          <Flex gap="2" wrap="wrap">
+            {(bubble.message.options || []).map((option) => (
+              <Button
+                key={option.id}
+                size="xs"
+                variant={option.id === 'reject' ? 'outline' : 'solid'}
+                bg={option.id === 'reject' ? 'transparent' : '#dce9f5'}
+                color={option.id === 'reject' ? '#f1a1a7' : '#11181d'}
+                borderColor={option.id === 'reject' ? '#7b484d' : '#dce9f5'}
+                disabled={submitting || (
+                  bubble.message?.tool_name === 'user_input'
+                  && option.id !== 'reject'
+                  && !answerReady
+                )}
+                onClick={() => respond(option.id)}
+              >
+                {option.label}
+              </Button>
+            ))}
+          </Flex>
+        </Box>
+      )}
       <Box
         aria-hidden="true"
         position="absolute"

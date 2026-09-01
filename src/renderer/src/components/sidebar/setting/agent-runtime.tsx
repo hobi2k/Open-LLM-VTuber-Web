@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/dialog";
 import {
   InteractionMode,
+  PermissionMode,
   ReasoningEffort,
   RuntimeModel,
   RuntimeProvider,
@@ -247,6 +248,17 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
     }),
     [reasoningEffortValues, t],
   );
+  const permissionModeCollection = useMemo(
+    () => createListCollection<{ label: string; value: string }>({
+      items: (["disabled", "manual", "auto", "plan"] as PermissionMode[]).map(
+        (value) => ({
+          value,
+          label: t(`settings.agent.runtime.permissionModes.${value}`),
+        }),
+      ),
+    }),
+    [t],
+  );
 
   const projectOptions = useMemo(() => {
     const values = new Map(
@@ -426,7 +438,10 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
     if (isOpenCode) {
       handleOpenCodeSettingChange("interaction_mode", mode);
       if (mode === "coding") {
-        handleOpenCodeSettingChange("allow_tools", true);
+        if ((runtimeSettings.opencode.permission_mode || "disabled") === "disabled") {
+          handleOpenCodeSettingChange("permission_mode", "manual");
+          handleOpenCodeSettingChange("allow_tools", true);
+        }
         if (runtimeSettings.opencode.agent === "vtuber") {
           handleOpenCodeSettingChange("agent", "build");
         }
@@ -436,9 +451,20 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
       return;
     }
     handleCLISettingChange(runtimeKey, "interaction_mode", mode);
-    if (mode === "coding") {
+    if (mode === "coding" && (runtimeSettings[runtimeKey].permission_mode || "disabled") === "disabled") {
+      handleCLISettingChange(runtimeKey, "permission_mode", "manual");
       handleCLISettingChange(runtimeKey, "allow_tools", true);
     }
+  };
+
+  const changePermissionMode = (mode: PermissionMode): void => {
+    if (isOpenCode) {
+      handleOpenCodeSettingChange("permission_mode", mode);
+      handleOpenCodeSettingChange("allow_tools", mode !== "disabled");
+      return;
+    }
+    handleCLISettingChange(runtimeKey, "permission_mode", mode);
+    handleCLISettingChange(runtimeKey, "allow_tools", mode !== "disabled");
   };
 
   const changeSession = (value: string): void => {
@@ -551,6 +577,7 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
         checked={settings.allowProactiveSpeak}
         onChange={handleAllowProactiveSpeakChange}
       />
+
       {settings.allowProactiveSpeak && (
         <NumberField
           label={t("settings.agent.idleSecondsToSpeak")}
@@ -785,6 +812,21 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
           handleCLISettingChange(runtimeKey, "show_reasoning", value);
         }}
         help={t("settings.agent.runtime.showReasoningHelp")}
+      />
+
+      <SelectField
+        label={t("settings.agent.runtime.permissionMode")}
+        value={[
+          selectedRuntime.permission_mode
+            || (selectedRuntime.allow_tools ? "auto" : "disabled"),
+        ]}
+        onChange={(value) => {
+          const permissionMode = value[0] as PermissionMode | undefined;
+          if (permissionMode) changePermissionMode(permissionMode);
+        }}
+        collection={permissionModeCollection}
+        placeholder={t("settings.agent.runtime.permissionMode")}
+        help={t("settings.agent.runtime.permissionModeHelp")}
       />
 
       {runtimeError && (
@@ -1072,17 +1114,6 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
               />
             </>
           )}
-          <SwitchField
-            label={t("settings.agent.runtime.allowTools")}
-            checked={selectedRuntime.allow_tools}
-            onChange={(value) => {
-              if (isOpenCode) {
-                handleOpenCodeSettingChange("allow_tools", value);
-                return;
-              }
-              handleCLISettingChange(runtimeKey, "allow_tools", value);
-            }}
-          />
           <NumberField
             label={t("settings.agent.runtime.timeout")}
             value={selectedRuntime.timeout}

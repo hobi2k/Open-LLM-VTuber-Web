@@ -58,6 +58,7 @@ export function useTextInput() {
   return {
     inputText,
     setInputText: handleInputChange,
+    setInputValue: setInputText,
     handleSend,
     handleKeyPress,
     handleCompositionStart,

@@ -17,7 +17,7 @@ export const inputSubtitleStyles = {
     gap: '2',
     p: '2',
     borderRadius: '8px',
-    overflow: 'hidden',
+    overflow: 'visible',
     border: '1px solid rgba(180, 199, 210, 0.34)',
     boxShadow: '0 12px 36px rgba(0, 0, 0, 0.38)',
     bg: 'rgba(14, 20, 24, 0.95)',

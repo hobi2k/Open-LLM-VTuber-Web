@@ -3,6 +3,7 @@ import {
 } from 'electron';
 import { join } from 'path';
 import { is } from '@electron-toolkit/utils';
+import { petWindowInteractionState } from './pet-window-state';
 
 const isMac = process.platform === 'darwin';
 
@@ -37,7 +38,7 @@ export class WindowManager {
     });
 
     ipcMain.on('mode-change-rendered', () => {
-      this.window?.setOpacity(1);
+      this.revealWindow();
     });
 
     ipcMain.on('window-unfullscreen', () => {
@@ -152,6 +153,7 @@ export class WindowManager {
   private setWindowModeWindow(): void {
     if (!this.window) return;
 
+    this.hoveringComponents.clear();
     this.window.setAlwaysOnTop(false);
     this.window.setIgnoreMouseEvents(false);
     this.window.setSkipTaskbar(false);
@@ -182,6 +184,7 @@ export class WindowManager {
     this.window?.setIgnoreMouseEvents(false, { forward: true });
 
     this.window.webContents.send('mode-changed', 'window');
+    this.scheduleReveal('window');
   }
 
   private setWindowModePet(): void {
@@ -214,17 +217,20 @@ export class WindowManager {
     this.window.setResizable(false);
     this.window.setSkipTaskbar(true);
     this.window.setFocusable(false);
+    this.window.blur();
 
+    this.hoveringComponents.clear();
     if (isMac) {
-      this.window.setIgnoreMouseEvents(true);
+      this.setMousePassthrough(true);
       this.window.setVisibleOnAllWorkspaces(true, {
         visibleOnFullScreen: true,
       });
     } else {
-      this.window.setIgnoreMouseEvents(true, { forward: true });
+      this.setMousePassthrough(true);
     }
 
     this.window.webContents.send('mode-changed', 'pet');
+    this.scheduleReveal('pet');
   }
 
   getWindow(): BrowserWindow | null {
@@ -232,14 +238,7 @@ export class WindowManager {
   }
 
   setIgnoreMouseEvents(ignore: boolean): void {
-    if (!this.window) return;
-
-    if (isMac) {
-      this.window.setIgnoreMouseEvents(ignore);
-      // this.window.setIgnoreMouseEvents(ignore, { forward: true });
-    } else {
-      this.window.setIgnoreMouseEvents(ignore, { forward: true });
-    }
+    this.setMousePassthrough(ignore);
   }
 
   maximizeWindow(): void {
@@ -271,9 +270,6 @@ export class WindowManager {
   updateComponentHover(componentId: string, isHovering: boolean): void {
     if (this.currentMode === 'window') return;
 
-    // If force ignore is enabled, don't change the mouse ignore state
-    if (this.forceIgnoreMouse) return;
-
     if (isHovering) {
       this.hoveringComponents.add(componentId);
     } else {
@@ -281,15 +277,13 @@ export class WindowManager {
     }
 
     if (this.window) {
-      const shouldIgnore = this.hoveringComponents.size === 0;
-      if (isMac) {
-        this.window.setIgnoreMouseEvents(shouldIgnore);
-      } else {
-        this.window.setIgnoreMouseEvents(shouldIgnore, { forward: true });
-      }
-      if (!shouldIgnore) {
-        this.window.setFocusable(true);
-      }
+      const state = petWindowInteractionState(
+        this.hoveringComponents.size,
+        this.forceIgnoreMouse,
+      );
+      this.setMousePassthrough(state.ignoreMouse);
+      this.window.setFocusable(state.focusable);
+      if (!state.focusable) this.window.blur();
     }
   }
 
@@ -298,21 +292,13 @@ export class WindowManager {
     this.forceIgnoreMouse = !this.forceIgnoreMouse;
 
     // Apply the new setting immediately
-    if (this.forceIgnoreMouse) {
-      if (isMac) {
-        this.window?.setIgnoreMouseEvents(true);
-      } else {
-        this.window?.setIgnoreMouseEvents(true, { forward: true });
-      }
-    } else {
-      // Reapply normal behavior based on hovering components
-      const shouldIgnore = this.hoveringComponents.size === 0;
-      if (isMac) {
-        this.window?.setIgnoreMouseEvents(shouldIgnore);
-      } else {
-        this.window?.setIgnoreMouseEvents(shouldIgnore, { forward: true });
-      }
-    }
+    const state = petWindowInteractionState(
+      this.hoveringComponents.size,
+      this.forceIgnoreMouse,
+    );
+    this.setMousePassthrough(state.ignoreMouse);
+    this.window?.setFocusable(state.focusable);
+    if (!state.focusable) this.window?.blur();
 
     // Notify renderer about the change
     this.window?.webContents.send('force-ignore-mouse-changed', this.forceIgnoreMouse);
@@ -326,5 +312,20 @@ export class WindowManager {
   // Get current mode
   getCurrentMode(): 'window' | 'pet' {
     return this.currentMode;
+  }
+
+  private setMousePassthrough(ignore: boolean): void {
+    this.window?.setIgnoreMouseEvents(ignore, { forward: true });
+  }
+
+  private revealWindow(): void {
+    this.window?.webContents.invalidate();
+    this.window?.setOpacity(1);
+  }
+
+  private scheduleReveal(mode: 'window' | 'pet'): void {
+    setTimeout(() => {
+      if (this.currentMode === mode) this.revealWindow();
+    }, 250);
   }
 }
