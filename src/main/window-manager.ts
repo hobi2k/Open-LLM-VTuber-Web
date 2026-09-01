@@ -1,3 +1,4 @@
+/* eslint-disable no-param-reassign */
 import {
   BrowserWindow, screen, shell, ipcMain,
 } from 'electron';
@@ -5,6 +6,15 @@ import { join } from 'path';
 import { is } from '@electron-toolkit/utils';
 
 const isMac = process.platform === 'darwin';
+
+function isSafeBrowserUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return ['http:', 'https:', 'about:'].includes(url.protocol);
+  } catch {
+    return false;
+  }
+}
 
 export class WindowManager {
   private window: BrowserWindow | null = null;
@@ -71,6 +81,7 @@ export class WindowManager {
         sandbox: true,
         contextIsolation: true,
         nodeIntegration: false,
+        webviewTag: true,
       },
       hasShadow: false,
       paintWhenInitiallyHidden: true,
@@ -78,6 +89,7 @@ export class WindowManager {
     });
 
     this.setupWindowEvents();
+    this.setupWebviewSecurity();
     this.loadContent();
 
     this.window.on('enter-full-screen', () => {
@@ -123,6 +135,30 @@ export class WindowManager {
     this.window.webContents.setWindowOpenHandler((details) => {
       shell.openExternal(details.url);
       return { action: 'deny' };
+    });
+  }
+
+  private setupWebviewSecurity(): void {
+    if (!this.window) return;
+
+    this.window.webContents.on('will-attach-webview', (_event, preferences) => {
+      delete preferences.preload;
+      preferences.nodeIntegration = false;
+      preferences.contextIsolation = true;
+      preferences.sandbox = true;
+    });
+    this.window.webContents.on('did-attach-webview', (_event, contents) => {
+      contents.setWindowOpenHandler(({ url }) => {
+        if (isSafeBrowserUrl(url)) {
+          contents.loadURL(url).catch((error) => {
+            console.error('Failed to open browser view URL:', error);
+          });
+        }
+        return { action: 'deny' };
+      });
+      contents.on('will-navigate', (event, url) => {
+        if (!isSafeBrowserUrl(url)) event.preventDefault();
+      });
     });
   }
 
