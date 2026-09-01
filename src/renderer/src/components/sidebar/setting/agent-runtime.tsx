@@ -1054,16 +1054,21 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
           title={t("settings.agent.runtime.renameConversation")}
           variant="outline"
           size="sm"
-          minW="9"
+          minW="fit-content"
           minH="40px"
-          px="2"
+          px="3"
+          gap="1.5"
           borderColor="#34404a"
           color="#cbd3da"
+          whiteSpace="nowrap"
           _hover={{ bg: "#20282f", borderColor: "#4a5966" }}
           onClick={openRenameDialog}
           disabled={!selectedSession}
         >
           <HiPencilSquare />
+          <Text as="span" fontSize="xs">
+            {t("settings.agent.runtime.rename")}
+          </Text>
         </Button>
       </Flex>
 
