@@ -14,6 +14,10 @@ declare global {
       onMicToggle: (callback: () => void) => void;
       onInterrupt: (callback: () => void) => void;
       updateComponentHover: (componentId: string, isHovering: boolean) => void;
+      updatePetInteractiveRegion: (
+        componentId: string,
+        region: { x: number; y: number; width: number; height: number } | null,
+      ) => void;
       onToggleInputSubtitle: (callback: () => void) => void;
       onToggleScrollToResize: (callback: () => void) => void;
       onSwitchCharacter: (callback: (filename: string) => void) => void;

@@ -7,6 +7,8 @@ export interface Live2DScreenAnchor {
   x: number;
   y: number;
   bottom: number;
+  left: number;
+  right: number;
   ready: boolean;
 }
 
@@ -18,6 +20,8 @@ export function useLive2DScreenAnchor(): Live2DScreenAnchor {
     x: window.innerWidth / 2,
     y: Math.max(120, window.innerHeight * 0.22),
     bottom: window.innerHeight * 0.78,
+    left: window.innerWidth * 0.35,
+    right: window.innerWidth * 0.65,
     ready: false,
   }));
 
@@ -78,6 +82,8 @@ export function useLive2DScreenAnchor(): Live2DScreenAnchor {
         x: rect.left + ((centerX + 1) / 2) * rect.width,
         y: rect.top + ((1 - maxY) / 2) * rect.height,
         bottom: rect.top + ((1 - minY) / 2) * rect.height,
+        left: rect.left + ((minX + 1) / 2) * rect.width,
+        right: rect.left + ((maxX + 1) / 2) * rect.width,
         ready: true,
       };
 
@@ -86,6 +92,8 @@ export function useLive2DScreenAnchor(): Live2DScreenAnchor {
         && Math.abs(previous.x - next.x) < POSITION_EPSILON_PX
         && Math.abs(previous.y - next.y) < POSITION_EPSILON_PX
         && Math.abs(previous.bottom - next.bottom) < POSITION_EPSILON_PX
+        && Math.abs(previous.left - next.left) < POSITION_EPSILON_PX
+        && Math.abs(previous.right - next.right) < POSITION_EPSILON_PX
           ? previous
           : next
       ));

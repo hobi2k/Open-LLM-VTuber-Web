@@ -65,6 +65,13 @@ function setupIPC(): void {
     },
   );
 
+  ipcMain.on(
+    "update-pet-interactive-region",
+    (_event, componentId: string, region) => {
+      windowManager.updatePetInteractiveRegion(componentId, region);
+    },
+  );
+
   ipcMain.handle("get-config-files", () => {
     const configFiles = JSON.parse(localStorage.getItem("configFiles") || "[]");
     menuManager.updateConfigFiles(configFiles);

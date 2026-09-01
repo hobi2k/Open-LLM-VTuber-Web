@@ -17,6 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { useInputSubtitle } from '@/hooks/electron/use-input-subtitle';
 import { useDraggable } from '@/hooks/electron/use-draggable';
 import { useLive2DScreenAnchor } from '@/hooks/canvas/use-live2d-screen-anchor';
+import { usePetInteractiveRegion } from '@/hooks/electron/use-pet-interactive-region';
 import { inputSubtitleStyles } from './electron-style';
 import { useMode } from '@/context/mode-context';
 import { useRuntimeSlashCommands } from '@/hooks/utils/use-runtime-slash-commands';
@@ -98,6 +99,8 @@ export function InputSubtitle() {
     observer.observe(element);
     return () => observer.disconnect();
   }, [elementRef]);
+
+  usePetInteractiveRegion('input-subtitle', elementRef, isPet && isVisible, 48);
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();

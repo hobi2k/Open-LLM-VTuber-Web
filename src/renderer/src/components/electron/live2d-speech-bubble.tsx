@@ -19,6 +19,7 @@ import { useChatHistory } from '@/context/chat-history-context';
 import { useWebSocket } from '@/context/websocket-context';
 import { useAiState } from '@/context/ai-state-context';
 import { useLive2DScreenAnchor } from '@/hooks/canvas/use-live2d-screen-anchor';
+import { usePetInteractiveRegion } from '@/hooks/electron/use-pet-interactive-region';
 import { Message } from '@/services/websocket-service';
 import {
   activityInput,
@@ -210,6 +211,8 @@ export function Live2DSpeechBubble(): JSX.Element | null {
     observer.observe(element);
     return () => observer.disconnect();
   }, [bubble]);
+
+  usePetInteractiveRegion('live2d-speech-bubble', bubbleRef, Boolean(bubble), 48);
 
   useEffect(() => {
     const element = contentRef.current;

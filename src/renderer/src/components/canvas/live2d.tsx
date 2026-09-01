@@ -13,6 +13,7 @@ import { useLive2DExpression } from "@/hooks/canvas/use-live2d-expression";
 import { useForceIgnoreMouse } from "@/hooks/utils/use-force-ignore-mouse";
 import { useMode } from "@/context/mode-context";
 import { useCodingLive2DActions } from "@/hooks/canvas/use-coding-live2d-actions";
+import { useLive2DScreenAnchor } from "@/hooks/canvas/use-live2d-screen-anchor";
 
 interface Live2DProps {
   showSidebar?: boolean;
@@ -27,6 +28,7 @@ export const Live2D = memo(
     const { aiState } = useAiState();
     const { resetExpression } = useLive2DExpression();
     const isPet = mode === 'pet';
+    const anchor = useLive2DScreenAnchor();
 
     // Get canvasRef from useLive2DResize
     const { canvasRef } = useLive2DResize({
@@ -46,6 +48,24 @@ export const Live2D = memo(
     useInterrupt();
     useAudioTask();
     useCodingLive2DActions();
+
+    useEffect(() => {
+      if (!isPet || !anchor.ready) {
+        window.api?.updatePetInteractiveRegion?.('live2d-model', null);
+        return;
+      }
+      const padding = 96;
+      window.api?.updatePetInteractiveRegion?.('live2d-model', {
+        x: anchor.left - padding,
+        y: anchor.y - padding,
+        width: anchor.right - anchor.left + padding * 2,
+        height: anchor.bottom - anchor.y + padding * 2,
+      });
+    }, [anchor.bottom, anchor.left, anchor.ready, anchor.right, anchor.y, isPet]);
+
+    useEffect(() => () => {
+      window.api?.updatePetInteractiveRegion?.('live2d-model', null);
+    }, []);
 
     // Reset expression to default when AI state becomes idle
     useEffect(() => {

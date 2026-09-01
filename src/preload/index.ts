@@ -37,6 +37,12 @@ const api = {
   updateComponentHover: (componentId: string, isHovering: boolean) => {
     ipcRenderer.send("update-component-hover", componentId, isHovering);
   },
+  updatePetInteractiveRegion: (
+    componentId: string,
+    region: { x: number; y: number; width: number; height: number } | null,
+  ) => {
+    ipcRenderer.send("update-pet-interactive-region", componentId, region);
+  },
   onToggleInputSubtitle: (callback: () => void) => {
     const handler = (_event: any) => callback();
     ipcRenderer.on("toggle-input-subtitle", handler);

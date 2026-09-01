@@ -4,9 +4,15 @@ import {
 } from 'electron';
 import { join } from 'path';
 import { is } from '@electron-toolkit/utils';
-import { petWindowInteractionState } from './pet-window-state';
+import {
+  PetInteractiveRegion,
+  petCursorInInteractiveRegion,
+  petWindowInteractionState,
+} from './pet-window-state';
 
 const isMac = process.platform === 'darwin';
+const PET_CURSOR_POLL_INTERVAL_MS = 16;
+const PET_INTERACTION_EXIT_GRACE_MS = 750;
 
 function isSafeBrowserUrl(value: string): boolean {
   try {
@@ -27,7 +33,13 @@ export class WindowManager {
     height: number;
   } | null = null;
 
-  private hoveringComponents: Set<string> = new Set();
+  private petInteractiveRegions: Map<string, PetInteractiveRegion> = new Map();
+
+  private petInteractionTimer: NodeJS.Timeout | null = null;
+
+  private mousePassthrough: boolean | null = null;
+
+  private petInteractiveUntil = 0;
 
   private currentMode: 'window' | 'pet' = 'window';
 
@@ -99,6 +111,11 @@ export class WindowManager {
 
     this.window.on('leave-full-screen', () => {
       this.window?.webContents.send('window-fullscreen-change', false);
+    });
+
+    this.window.on('closed', () => {
+      this.stopPetInteractionTracking();
+      this.window = null;
     });
 
     return this.window;
@@ -189,9 +206,11 @@ export class WindowManager {
   private setWindowModeWindow(): void {
     if (!this.window) return;
 
-    this.hoveringComponents.clear();
+    this.stopPetInteractionTracking();
+    this.petInteractiveRegions.clear();
+    this.petInteractiveUntil = 0;
     this.window.setAlwaysOnTop(false);
-    this.window.setIgnoreMouseEvents(false);
+    this.setMousePassthrough(false);
     this.window.setSkipTaskbar(false);
     this.window.setResizable(true);
     this.window.setFocusable(true);
@@ -217,7 +236,7 @@ export class WindowManager {
       });
     }
 
-    this.window?.setIgnoreMouseEvents(false, { forward: true });
+    this.setMousePassthrough(false);
 
     this.window.webContents.send('mode-changed', 'window');
     this.scheduleReveal('window');
@@ -226,6 +245,8 @@ export class WindowManager {
   private setWindowModePet(): void {
     if (!this.window) return;
 
+    this.petInteractiveRegions.clear();
+    this.petInteractiveUntil = 0;
     this.windowedBounds = this.window.getBounds();
 
     if (this.window.isFullScreen()) {
@@ -252,10 +273,10 @@ export class WindowManager {
     if (isMac) this.window.setWindowButtonVisibility(false);
     this.window.setResizable(false);
     this.window.setSkipTaskbar(true);
-    this.window.setFocusable(false);
-    this.window.blur();
+    // macOS must keep the pet window focusable so forwarded hover events can
+    // activate the input dock and model before the click is delivered.
+    this.window.setFocusable(true);
 
-    this.hoveringComponents.clear();
     if (isMac) {
       this.setMousePassthrough(true);
       this.window.setVisibleOnAllWorkspaces(true, {
@@ -264,6 +285,8 @@ export class WindowManager {
     } else {
       this.setMousePassthrough(true);
     }
+
+    this.startPetInteractionTracking();
 
     this.window.webContents.send('mode-changed', 'pet');
     this.scheduleReveal('pet');
@@ -303,24 +326,31 @@ export class WindowManager {
     return bounds.width >= width && bounds.height >= height;
   }
 
-  updateComponentHover(componentId: string, isHovering: boolean): void {
+  updateComponentHover(_componentId: string, isHovering: boolean): void {
     if (this.currentMode === 'window') return;
+    if (isHovering) this.petInteractiveUntil = Date.now() + PET_INTERACTION_EXIT_GRACE_MS;
+    this.refreshPetInteraction();
+  }
 
-    if (isHovering) {
-      this.hoveringComponents.add(componentId);
-    } else {
-      this.hoveringComponents.delete(componentId);
+  updatePetInteractiveRegion(
+    componentId: string,
+    region: PetInteractiveRegion | null,
+  ): void {
+    if (this.currentMode !== 'pet') return;
+    if (!region) {
+      this.petInteractiveRegions.delete(componentId);
+      this.refreshPetInteraction();
+      return;
     }
 
-    if (this.window) {
-      const state = petWindowInteractionState(
-        this.hoveringComponents.size,
-        this.forceIgnoreMouse,
-      );
-      this.setMousePassthrough(state.ignoreMouse);
-      this.window.setFocusable(state.focusable);
-      if (!state.focusable) this.window.blur();
-    }
+    const valid = [region.x, region.y, region.width, region.height]
+      .every(Number.isFinite)
+      && region.width > 0
+      && region.height > 0;
+    if (!valid) return;
+
+    this.petInteractiveRegions.set(componentId, region);
+    this.refreshPetInteraction();
   }
 
   // Toggle force ignore mouse events
@@ -328,13 +358,7 @@ export class WindowManager {
     this.forceIgnoreMouse = !this.forceIgnoreMouse;
 
     // Apply the new setting immediately
-    const state = petWindowInteractionState(
-      this.hoveringComponents.size,
-      this.forceIgnoreMouse,
-    );
-    this.setMousePassthrough(state.ignoreMouse);
-    this.window?.setFocusable(state.focusable);
-    if (!state.focusable) this.window?.blur();
+    this.refreshPetInteraction();
 
     // Notify renderer about the change
     this.window?.webContents.send('force-ignore-mouse-changed', this.forceIgnoreMouse);
@@ -351,7 +375,37 @@ export class WindowManager {
   }
 
   private setMousePassthrough(ignore: boolean): void {
+    if (this.mousePassthrough === ignore) return;
+    this.mousePassthrough = ignore;
     this.window?.setIgnoreMouseEvents(ignore, { forward: true });
+  }
+
+  private startPetInteractionTracking(): void {
+    this.stopPetInteractionTracking();
+    this.refreshPetInteraction();
+    this.petInteractionTimer = setInterval(() => {
+      this.refreshPetInteraction();
+    }, PET_CURSOR_POLL_INTERVAL_MS);
+  }
+
+  private stopPetInteractionTracking(): void {
+    if (!this.petInteractionTimer) return;
+    clearInterval(this.petInteractionTimer);
+    this.petInteractionTimer = null;
+  }
+
+  private refreshPetInteraction(): void {
+    if (this.currentMode !== 'pet' || !this.window) return;
+    const bounds = this.window.getBounds();
+    const cursor = screen.getCursorScreenPoint();
+    const cursorInside = petCursorInInteractiveRegion(
+      { x: cursor.x - bounds.x, y: cursor.y - bounds.y },
+      [...this.petInteractiveRegions.values()],
+    );
+    if (cursorInside) this.petInteractiveUntil = Date.now() + PET_INTERACTION_EXIT_GRACE_MS;
+    const isInteractive = cursorInside || Date.now() < this.petInteractiveUntil;
+    const state = petWindowInteractionState(isInteractive ? 1 : 0, this.forceIgnoreMouse);
+    this.setMousePassthrough(state.ignoreMouse);
   }
 
   private revealWindow(): void {
