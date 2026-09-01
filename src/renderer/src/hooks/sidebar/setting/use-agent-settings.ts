@@ -69,6 +69,8 @@ export interface RuntimeSession {
   source?: string;
 }
 
+export type RuntimeCatalogKey = "opencode" | "claude_code" | "codex" | "hermes";
+
 interface RuntimeCatalog {
   executables: Record<string, CLIConnection>;
   omlx: {
@@ -317,21 +319,22 @@ export function useAgentSettings({
     }
   }, [baseUrl, setCachedRuntimeSettings]);
 
-  const refreshRuntimeCatalog = useCallback(async (
-    settings: AgentRuntimeSettings = runtimeSettings,
-  ) => {
-    const response = await fetch(`${baseUrl}/api/agent-runtime/catalog`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(settingsRequest(settings)),
-    });
-    if (!response.ok) {
-      throw new Error(`Runtime catalog request failed (${response.status})`);
-    }
-    const catalog = (await response.json()) as RuntimeCatalog;
-    setRuntimeCatalog(catalog);
-    setCachedRuntimeCatalog(catalog);
-  }, [baseUrl, runtimeSettings, setCachedRuntimeCatalog]);
+  const refreshRuntimeCatalog = useCallback(
+    async (settings: AgentRuntimeSettings = runtimeSettings) => {
+      const response = await fetch(`${baseUrl}/api/agent-runtime/catalog`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(settingsRequest(settings)),
+      });
+      if (!response.ok) {
+        throw new Error(`Runtime catalog request failed (${response.status})`);
+      }
+      const catalog = (await response.json()) as RuntimeCatalog;
+      setRuntimeCatalog(catalog);
+      setCachedRuntimeCatalog(catalog);
+    },
+    [baseUrl, runtimeSettings, setCachedRuntimeCatalog],
+  );
 
   useEffect(() => {
     if (wsState === "OPEN") loadRuntimeSettings();
@@ -455,6 +458,38 @@ export function useAgentSettings({
     return true;
   }, [addRuntimeProject]);
 
+  const renameRuntimeSession = useCallback(
+    async (
+      runtime: RuntimeCatalogKey,
+      session: RuntimeSession,
+      title: string,
+    ) => {
+      const response = await fetch(
+        `${baseUrl}/api/agent-runtime/session-title`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            runtime,
+            session_id: session.id,
+            title,
+            workspace: session.workspace,
+          }),
+        },
+      );
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as {
+          detail?: string;
+        } | null;
+        throw new Error(
+          payload?.detail || `Session rename failed (${response.status})`,
+        );
+      }
+      await refreshRuntimeCatalog(runtimeSettings);
+    },
+    [baseUrl, refreshRuntimeCatalog, runtimeSettings],
+  );
+
   const saveRuntimeSettings = useCallback(async () => {
     setRuntimeState("saving");
     setRuntimeError(null);
@@ -506,7 +541,8 @@ export function useAgentSettings({
         ...runtimeSettings,
         opencode: {
           ...runtimeSettings.opencode,
-          base_url: connections.opencode.base_url || runtimeSettings.opencode.base_url,
+          base_url:
+            connections.opencode.base_url || runtimeSettings.opencode.base_url,
           connection: connections.opencode,
         },
         claude_code: {
@@ -566,6 +602,7 @@ export function useAgentSettings({
     handleWorkspaceChange,
     addRuntimeProject,
     selectRuntimeProject,
+    renameRuntimeSession,
     loadRuntimeSettings,
     refreshRuntimeCatalog,
     checkRuntimeConnections,

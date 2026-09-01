@@ -17,6 +17,7 @@ import {
   HiChevronDown,
   HiCommandLine,
   HiFolderPlus,
+  HiPencilSquare,
   HiSignalSlash,
 } from "react-icons/hi2";
 import {
@@ -109,12 +110,17 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
     handleWorkspaceChange,
     addRuntimeProject,
     selectRuntimeProject,
+    renameRuntimeSession,
     loadRuntimeSettings,
     checkRuntimeConnections,
     saveRuntimeSettings,
   } = useAgentSettings({ onSave, onCancel });
   const [projectDialogOpen, setProjectDialogOpen] = useState(false);
   const [projectPath, setProjectPath] = useState("");
+  const [renameDialogOpen, setRenameDialogOpen] = useState(false);
+  const [renameTitle, setRenameTitle] = useState("");
+  const [renameError, setRenameError] = useState<string | null>(null);
+  const [renaming, setRenaming] = useState(false);
   const [sessionScope, setSessionScope] = useState<"all" | "project">("all");
   const [recoveryBaseUrl, setRecoveryBaseUrl] = useState(baseUrl);
   const [recoveryWsUrl, setRecoveryWsUrl] = useState(wsUrl);
@@ -464,6 +470,32 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
     setProjectDialogOpen(false);
   };
 
+  const openRenameDialog = (): void => {
+    if (!selectedSession) return;
+    setRenameTitle(selectedSession.title);
+    setRenameError(null);
+    setRenameDialogOpen(true);
+  };
+
+  const renameSelectedSession = async (): Promise<void> => {
+    const title = renameTitle.trim();
+    if (!selectedSession || !title) return;
+    if (title === selectedSession.title) {
+      setRenameDialogOpen(false);
+      return;
+    }
+    setRenaming(true);
+    setRenameError(null);
+    try {
+      await renameRuntimeSession(runtimeKey, selectedSession, title);
+      setRenameDialogOpen(false);
+    } catch (error) {
+      setRenameError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setRenaming(false);
+    }
+  };
+
   const executablePath = "path" in connection ? connection.path : null;
   const executableError =
     "executable_error" in connection ? connection.executable_error : null;
@@ -579,7 +611,9 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
               overflowWrap="anywhere"
               mt="0.5"
             >
-              {(isOpenCode && "base_url" in connection && connection.base_url) ||
+              {(isOpenCode &&
+                "base_url" in connection &&
+                connection.base_url) ||
                 executablePath ||
                 selectedRuntime.connection.version ||
                 (isOpenCode
@@ -947,29 +981,49 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
         </SegmentGroup.Root>
       </Stack>
 
-      <EditableChoiceField
-        label={t("settings.agent.runtime.conversation")}
-        value={selectedRuntime.session_id}
-        onInput={changeSession}
-        choices={sessionChoices}
-        placeholder={t("settings.agent.runtime.selectConversation")}
-        emptyText={t("settings.agent.runtime.noMatches")}
-        help={[
-          selectedSession?.title,
-          sessionScope === "all"
-            ? t("settings.agent.runtime.sessionCount", {
-              count: sessionOptions.length,
-            })
-            : t("settings.agent.runtime.projectSessionCount", {
-              count: scopedSessionOptions.length,
-              total: sessionOptions.length,
-            }),
-        ]
-          .filter(Boolean)
-          .join(" · ")}
-        maxVisible={160}
-        overflowText={t("settings.agent.runtime.searchAllSessions")}
-      />
+      <Flex align="end" gap="2">
+        <Box flex="1" minW="0">
+          <EditableChoiceField
+            label={t("settings.agent.runtime.conversation")}
+            value={selectedRuntime.session_id}
+            onInput={changeSession}
+            choices={sessionChoices}
+            placeholder={t("settings.agent.runtime.selectConversation")}
+            emptyText={t("settings.agent.runtime.noMatches")}
+            help={[
+              selectedSession?.title,
+              sessionScope === "all"
+                ? t("settings.agent.runtime.sessionCount", {
+                  count: sessionOptions.length,
+                })
+                : t("settings.agent.runtime.projectSessionCount", {
+                  count: scopedSessionOptions.length,
+                  total: sessionOptions.length,
+                }),
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+            maxVisible={160}
+            overflowText={t("settings.agent.runtime.searchAllSessions")}
+          />
+        </Box>
+        <Button
+          aria-label={t("settings.agent.runtime.renameConversation")}
+          title={t("settings.agent.runtime.renameConversation")}
+          variant="outline"
+          size="sm"
+          minW="9"
+          minH="40px"
+          px="2"
+          borderColor="#34404a"
+          color="#cbd3da"
+          _hover={{ bg: "#20282f", borderColor: "#4a5966" }}
+          onClick={openRenameDialog}
+          disabled={!selectedSession}
+        >
+          <HiPencilSquare />
+        </Button>
+      </Flex>
 
       <Box as="details" borderTopWidth="1px" borderColor="#273038" pt="3.5">
         <Flex
@@ -1095,6 +1149,66 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
             </Button>
             <Button colorPalette="blue" onClick={addProject}>
               {t("settings.agent.runtime.add")}
+            </Button>
+          </DialogFooter>
+          <DialogCloseTrigger />
+        </DialogContent>
+      </DialogRoot>
+
+      <DialogRoot
+        open={renameDialogOpen}
+        onOpenChange={(details) => {
+          setRenameDialogOpen(details.open);
+          if (!details.open) setRenameError(null);
+        }}
+        size="sm"
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {t("settings.agent.runtime.renameConversation")}
+            </DialogTitle>
+          </DialogHeader>
+          <DialogBody>
+            <Stack gap="2">
+              <Text color="#aeb7bf" fontSize="xs" fontWeight="medium">
+                {t("settings.agent.runtime.conversationName")}
+              </Text>
+              <Input
+                value={renameTitle}
+                maxLength={120}
+                onChange={(event) => setRenameTitle(event.target.value)}
+                placeholder={t(
+                  "settings.agent.runtime.conversationNamePlaceholder",
+                )}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") renameSelectedSession();
+                }}
+                disabled={renaming}
+              />
+              {renameError && (
+                <Text color="#ef8a90" fontSize="xs" overflowWrap="anywhere">
+                  {renameError}
+                </Text>
+              )}
+            </Stack>
+          </DialogBody>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setRenameDialogOpen(false)}
+              disabled={renaming}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              colorPalette="blue"
+              onClick={renameSelectedSession}
+              disabled={!renameTitle.trim() || renaming}
+            >
+              {renaming
+                ? t("settings.agent.runtime.renaming")
+                : t("settings.agent.runtime.rename")}
             </Button>
           </DialogFooter>
           <DialogCloseTrigger />
