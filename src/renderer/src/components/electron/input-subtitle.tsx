@@ -3,6 +3,7 @@ import {
   LuMic,
   LuMicOff,
   LuMonitor,
+  LuPaperclip,
   LuSend,
 } from 'react-icons/lu';
 import {
@@ -11,7 +12,7 @@ import {
   Textarea,
 } from '@chakra-ui/react';
 import {
-  FormEvent, useState, useEffect, useCallback, useRef,
+  ChangeEvent, FormEvent, useState, useEffect, useCallback, useRef,
 } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useInputSubtitle } from '@/hooks/electron/use-input-subtitle';
@@ -22,6 +23,8 @@ import { inputSubtitleStyles } from './electron-style';
 import { useMode } from '@/context/mode-context';
 import { useRuntimeSlashCommands } from '@/hooks/utils/use-runtime-slash-commands';
 import { SlashCommandMenu } from '@/components/shared/slash-command-menu';
+import { IMAGE_ATTACHMENT_ACCEPT } from '@/context/image-attachment-context';
+import { ImageAttachmentStrip } from '@/components/shared/image-attachment-strip';
 
 const DOCK_WIDTH = 460;
 const VIEWPORT_MARGIN = 16;
@@ -41,6 +44,9 @@ export function InputSubtitle() {
     handleSend,
     aiState,
     micOn,
+    attachments,
+    addFiles,
+    removeAttachment,
   } = useInputSubtitle();
 
   const { mode, setMode } = useMode();
@@ -52,6 +58,7 @@ export function InputSubtitle() {
   const [isVisible, setIsVisible] = useState(true);
   const [dockHeight, setDockHeight] = useState(60);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const slash = useRuntimeSlashCommands(inputValue, setInputValue);
 
   const handleClose = useCallback(() => {
@@ -104,7 +111,14 @@ export function InputSubtitle() {
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
-    if (inputValue.trim()) handleSend();
+    if (inputValue.trim() || attachments.length) handleSend();
+  };
+
+  const handleFiles = async (event: ChangeEvent<HTMLInputElement>) => {
+    const input = event.currentTarget;
+    const files = Array.from(input.files || []);
+    input.value = '';
+    if (files.length) await addFiles(files);
   };
 
   if (!isVisible) return null;
@@ -132,6 +146,14 @@ export function InputSubtitle() {
       top={`${top}px`}
       width={`${width}px`}
     >
+      {attachments.length > 0 && (
+        <Box mb="1.5" px="1" maxW="100%">
+          <ImageAttachmentStrip
+            attachments={attachments}
+            onRemove={removeAttachment}
+          />
+        </Box>
+      )}
       <Box {...inputSubtitleStyles.dock}>
         {slash.open && (
           <SlashCommandMenu
@@ -141,6 +163,23 @@ export function InputSubtitle() {
             onHighlight={slash.setSelectedIndex}
           />
         )}
+        <IconButton
+          type="button"
+          aria-label={t('footer.attachImages')}
+          title={t('footer.attachImages')}
+          onClick={() => fileInputRef.current?.click()}
+          {...inputSubtitleStyles.iconButton}
+        >
+          <LuPaperclip size={17} />
+        </IconButton>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={IMAGE_ATTACHMENT_ACCEPT}
+          multiple
+          hidden
+          onChange={handleFiles}
+        />
         <IconButton
           type="button"
           aria-label={t('sidebar.windowMode')}
@@ -187,7 +226,7 @@ export function InputSubtitle() {
           type="submit"
           aria-label={t('footer.send')}
           title={t('footer.send')}
-          disabled={!inputValue.trim()}
+          disabled={!inputValue.trim() && !attachments.length}
           {...inputSubtitleStyles.sendButton}
         >
           <LuSend size={17} />

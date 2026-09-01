@@ -28,6 +28,7 @@ import { useConfig } from "@/context/character-config-context";
 import { useWebSocket } from "@/context/websocket-context";
 import { Message } from "@/services/websocket-service";
 import {
+  activityFileLanguage,
   activityInput,
   activityOutput,
   activityTitle,
@@ -262,6 +263,9 @@ function ActivityMessage({ message }: { message: Message }): JSX.Element {
   const output = activityOutput(message.output);
   const title = activityTitle(message.title, message.tool_name, message.input);
   const displayTitle = title !== message.command && title !== message.path ? title : '';
+  const language = kind === 'file'
+    ? activityFileLanguage(message.path, message.input)
+    : '';
 
   return (
     <Box
@@ -293,6 +297,19 @@ function ActivityMessage({ message }: { message: Message }): JSX.Element {
             <Text color="#7f929e" fontSize="2xs" fontWeight="semibold">
               {labels[kind]}
             </Text>
+            {language && (
+              <Badge
+                size="sm"
+                borderRadius="4px"
+                bg="#243945"
+                color="#add4e8"
+                fontFamily="mono"
+                fontSize="2xs"
+                px="1.5"
+              >
+                {language}
+              </Badge>
+            )}
             <Flex align="center" gap="1.5" color={accent}>
               {message.status === "running" ? (
                 <Spinner size="xs" />

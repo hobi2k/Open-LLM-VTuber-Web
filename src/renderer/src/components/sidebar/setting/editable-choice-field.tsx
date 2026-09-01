@@ -167,77 +167,89 @@ export function EditableChoiceField({
               boxShadow="0 18px 42px rgba(0, 0, 0, 0.52)"
               maxH="min(320px, calc(100vh - 64px))"
               maxW="calc(100vw - 32px)"
-              overflowY="auto"
-              overflowX="hidden"
-              p="1"
+              overflow="hidden"
               width="var(--reference-width)"
             >
-              {visibleChoices.length ? (
-                <Stack gap="0.5">
-                  {visibleChoices.map((choice) => {
-                    const selected = choice.value === value;
-                    return (
-                      <Button
-                        key={choice.key}
-                        variant="ghost"
-                        justifyContent="flex-start"
-                        textAlign="left"
-                        minH="10"
-                        h="auto"
-                        px="3"
-                        py="2"
-                        borderRadius="4px"
-                        color={selected ? "#e6f0ff" : "#d7dde2"}
-                        bg={selected ? "#20334a" : "transparent"}
-                        _hover={{ bg: selected ? "#29415d" : "#1b2329" }}
-                        onMouseDown={(event) => event.preventDefault()}
-                        onClick={() => selectChoice(choice)}
-                      >
-                        <Flex align="center" width="full" minW="0" gap="2">
-                          <Box flex="1" minW="0">
-                            <Text
-                              fontSize="sm"
-                              lineHeight="1.4"
-                              whiteSpace="normal"
-                              overflowWrap="anywhere"
-                            >
-                              {choice.label}
-                            </Text>
-                            {choice.meta && (
+              <Box
+                maxH="min(320px, calc(100vh - 64px))"
+                overflowY="auto"
+                overflowX="hidden"
+                overscrollBehavior="contain"
+                p="1"
+                tabIndex={0}
+                onWheel={(event) => event.stopPropagation()}
+                css={{
+                  scrollbarWidth: "thin",
+                  scrollbarColor: "#53636e #11171b",
+                }}
+              >
+                {visibleChoices.length ? (
+                  <Stack gap="0.5">
+                    {visibleChoices.map((choice) => {
+                      const selected = choice.value === value;
+                      return (
+                        <Button
+                          key={choice.key}
+                          variant="ghost"
+                          justifyContent="flex-start"
+                          textAlign="left"
+                          minH="10"
+                          h="auto"
+                          px="3"
+                          py="2"
+                          borderRadius="4px"
+                          color={selected ? "#e6f0ff" : "#d7dde2"}
+                          bg={selected ? "#20334a" : "transparent"}
+                          _hover={{ bg: selected ? "#29415d" : "#1b2329" }}
+                          onMouseDown={(event) => event.preventDefault()}
+                          onClick={() => selectChoice(choice)}
+                        >
+                          <Flex align="center" width="full" minW="0" gap="2">
+                            <Box flex="1" minW="0">
                               <Text
-                                color="#7f8a94"
-                                fontSize="2xs"
+                                fontSize="sm"
                                 lineHeight="1.4"
                                 whiteSpace="normal"
                                 overflowWrap="anywhere"
                               >
-                                {choice.meta}
+                                {choice.label}
                               </Text>
-                            )}
-                          </Box>
-                          {selected && <Box as={HiCheck} flexShrink="0" />}
-                        </Flex>
-                      </Button>
-                    );
-                  })}
-                  {hiddenCount > 0 && overflowText && (
-                    <Text
-                      color="#83909a"
-                      fontSize="2xs"
-                      lineHeight="1.45"
-                      px="3"
-                      py="2.5"
-                      overflowWrap="anywhere"
-                    >
-                      {overflowText.replace("{{count}}", String(hiddenCount))}
-                    </Text>
-                  )}
-                </Stack>
-              ) : (
-                <Text color="whiteAlpha.500" fontSize="xs" px="3" py="3">
-                  {emptyText}
-                </Text>
-              )}
+                              {choice.meta && (
+                                <Text
+                                  color="#7f8a94"
+                                  fontSize="2xs"
+                                  lineHeight="1.4"
+                                  whiteSpace="normal"
+                                  overflowWrap="anywhere"
+                                >
+                                  {choice.meta}
+                                </Text>
+                              )}
+                            </Box>
+                            {selected && <Box as={HiCheck} flexShrink="0" />}
+                          </Flex>
+                        </Button>
+                      );
+                    })}
+                    {hiddenCount > 0 && overflowText && (
+                      <Text
+                        color="#83909a"
+                        fontSize="2xs"
+                        lineHeight="1.45"
+                        px="3"
+                        py="2.5"
+                        overflowWrap="anywhere"
+                      >
+                        {overflowText.replace("{{count}}", String(hiddenCount))}
+                      </Text>
+                    )}
+                  </Stack>
+                ) : (
+                  <Text color="whiteAlpha.500" fontSize="xs" px="3" py="3">
+                    {emptyText}
+                  </Text>
+                )}
+              </Box>
             </Popover.Content>
           </Popover.Positioner>
         </Portal>

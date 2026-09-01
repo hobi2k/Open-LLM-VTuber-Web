@@ -15,6 +15,9 @@ export const useFooter = () => {
     handleKeyPress: handleKey,
     handleCompositionStart,
     handleCompositionEnd,
+    attachments,
+    addFiles,
+    removeAttachment,
   } = useTextInput();
 
   const { interrupt } = useInterrupt();
@@ -54,5 +57,8 @@ export const useFooter = () => {
     handleInterrupt,
     handleMicToggle,
     micOn,
+    attachments,
+    addFiles,
+    removeAttachment,
   };
 };

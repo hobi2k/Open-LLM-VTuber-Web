@@ -5,7 +5,7 @@ import {
 import { BsMicFill, BsMicMuteFill, BsPaperclip } from 'react-icons/bs';
 import { IoHandRightSharp } from 'react-icons/io5';
 import { FiChevronDown } from 'react-icons/fi';
-import { memo } from 'react';
+import { ChangeEvent, memo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { InputGroup } from '@/components/ui/input-group';
 import { footerStyles } from './footer-styles';
@@ -13,6 +13,11 @@ import AIStateIndicator from './ai-state-indicator';
 import { useFooter } from '@/hooks/footer/use-footer';
 import { useRuntimeSlashCommands } from '@/hooks/utils/use-runtime-slash-commands';
 import { SlashCommandMenu } from '@/components/shared/slash-command-menu';
+import {
+  IMAGE_ATTACHMENT_ACCEPT,
+  ImageAttachment,
+} from '@/context/image-attachment-context';
+import { ImageAttachmentStrip } from '@/components/shared/image-attachment-strip';
 
 // Type definitions
 interface FooterProps {
@@ -38,6 +43,9 @@ interface MessageInputProps {
   onCompositionStart: () => void
   onCompositionEnd: () => void
   setValue: (value: string) => void
+  attachments: ImageAttachment[]
+  addFiles: (files: FileList | File[]) => Promise<void>
+  removeAttachment: (id: string) => void
 }
 
 // Reusable components
@@ -103,9 +111,20 @@ const MessageInput = memo(({
   onCompositionStart,
   onCompositionEnd,
   setValue,
+  attachments,
+  addFiles,
+  removeAttachment,
 }: MessageInputProps) => {
   const { t } = useTranslation();
   const slash = useRuntimeSlashCommands(value, setValue);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFiles = async (event: ChangeEvent<HTMLInputElement>) => {
+    const input = event.currentTarget;
+    const files = Array.from(input.files || []);
+    input.value = '';
+    if (files.length) await addFiles(files);
+  };
 
   return (
     <InputGroup flex={1}>
@@ -119,12 +138,31 @@ const MessageInput = memo(({
           />
         )}
         <IconButton
-          aria-label="Attach file"
+          aria-label={t('footer.attachImages')}
+          title={t('footer.attachImages')}
           variant="ghost"
           {...footerStyles.footer.attachButton}
+          onClick={() => fileInputRef.current?.click()}
         >
           <BsPaperclip size="24" />
         </IconButton>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={IMAGE_ATTACHMENT_ACCEPT}
+          multiple
+          hidden
+          onChange={handleFiles}
+        />
+        {attachments.length > 0 && (
+          <Box position="absolute" top="4px" left="44px" right="8px" zIndex={3}>
+            <ImageAttachmentStrip
+              attachments={attachments}
+              onRemove={removeAttachment}
+              compact
+            />
+          </Box>
+        )}
         <Textarea
           value={value}
           onChange={onChange}
@@ -135,6 +173,7 @@ const MessageInput = memo(({
           onCompositionEnd={onCompositionEnd}
           placeholder={t('footer.typeYourMessage')}
           {...footerStyles.footer.input}
+          paddingTop={attachments.length ? '34px' : '20px'}
         />
       </Box>
     </InputGroup>
@@ -155,6 +194,9 @@ function Footer({ isCollapsed = false, onToggle }: FooterProps): JSX.Element {
     handleInterrupt,
     handleMicToggle,
     micOn,
+    attachments,
+    addFiles,
+    removeAttachment,
   } = useFooter();
 
   return (
@@ -181,6 +223,9 @@ function Footer({ isCollapsed = false, onToggle }: FooterProps): JSX.Element {
             onKeyDown={handleKeyPress}
             onCompositionStart={handleCompositionStart}
             onCompositionEnd={handleCompositionEnd}
+            attachments={attachments}
+            addFiles={addFiles}
+            removeAttachment={removeAttachment}
           />
         </HStack>
       </Box>

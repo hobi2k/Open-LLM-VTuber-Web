@@ -9,7 +9,7 @@ import {
   LuWrench,
 } from 'react-icons/lu';
 import {
-  Box, Button, Flex, Icon, Input, Text,
+  Badge, Box, Button, Flex, Icon, Input, Text,
 } from '@chakra-ui/react';
 import {
   ComponentType, useEffect, useMemo, useRef, useState,
@@ -22,6 +22,7 @@ import { useLive2DScreenAnchor } from '@/hooks/canvas/use-live2d-screen-anchor';
 import { usePetInteractiveRegion } from '@/hooks/electron/use-pet-interactive-region';
 import { Message } from '@/services/websocket-service';
 import {
+  activityFileLanguage,
   activityInput,
   activityOutput,
   activityTitle,
@@ -50,15 +51,12 @@ interface BubbleContent {
   message?: Message;
 }
 
-const MAX_BUBBLE_TEXT = 2400;
 const BUBBLE_WIDTH = 360;
 const VIEWPORT_MARGIN = 16;
 const ANCHOR_GAP = 20;
 
 function recentText(value: string): string {
-  const text = value.trim();
-  if (text.length <= MAX_BUBBLE_TEXT) return text;
-  return `...${text.slice(-MAX_BUBBLE_TEXT)}`;
+  return value.trim();
 }
 
 function messageText(message: Message): string {
@@ -155,6 +153,7 @@ export function Live2DSpeechBubble(): JSX.Element | null {
         label: t(`sidebar.activity${kind[0].toUpperCase()}${kind.slice(1)}`),
         text: messageText(latest),
         status: latest.status,
+        message: latest,
       };
     }
 
@@ -178,7 +177,8 @@ export function Live2DSpeechBubble(): JSX.Element | null {
     };
   }, [aiState, isThinkingSpeaking, messages, t]);
 
-  const interactive = bubble?.kind === 'permission' && bubble.status === 'running';
+  const permissionInteractive = bubble?.kind === 'permission' && bubble.status === 'running';
+  const stickToBottomRef = useRef(true);
 
   useEffect(() => {
     setAnswer('');
@@ -199,8 +199,8 @@ export function Live2DSpeechBubble(): JSX.Element | null {
   }, [bubble?.message?.request_id, wsState]);
 
   useEffect(() => () => {
-    if (interactive) window.api?.updateComponentHover('live2d-speech-bubble', false);
-  }, [interactive]);
+    window.api?.updateComponentHover('live2d-speech-bubble', false);
+  }, []);
 
   useEffect(() => {
     const element = bubbleRef.current;
@@ -215,8 +215,12 @@ export function Live2DSpeechBubble(): JSX.Element | null {
   usePetInteractiveRegion('live2d-speech-bubble', bubbleRef, Boolean(bubble), 48);
 
   useEffect(() => {
+    stickToBottomRef.current = true;
+  }, [bubble?.id]);
+
+  useEffect(() => {
     const element = contentRef.current;
-    if (element) element.scrollTop = element.scrollHeight;
+    if (element && stickToBottomRef.current) element.scrollTop = element.scrollHeight;
   }, [bubble?.text]);
 
   if (!bubble) return null;
@@ -238,6 +242,9 @@ export function Live2DSpeechBubble(): JSX.Element | null {
     permission: '#e3c27a',
   };
   const accent = bubble.status === 'error' ? '#ef8f96' : accentByKind[bubble.kind];
+  const language = bubble.kind === 'file'
+    ? activityFileLanguage(bubble.message?.path, bubble.message?.input)
+    : '';
   const questions = permissionQuestions(bubble.message?.permission_input);
   const answerReady = questions.length
     ? hasPermissionAnswers(questions, questionAnswers)
@@ -274,12 +281,12 @@ export function Live2DSpeechBubble(): JSX.Element | null {
       top={`${top}px`}
       width={`${width}px`}
       zIndex={900}
-      pointerEvents={interactive ? 'auto' : 'none'}
+      pointerEvents="auto"
       onMouseEnter={() => {
-        if (interactive) window.api?.updateComponentHover('live2d-speech-bubble', true);
+        window.api?.updateComponentHover('live2d-speech-bubble', true);
       }}
       onMouseLeave={() => {
-        if (interactive) window.api?.updateComponentHover('live2d-speech-bubble', false);
+        window.api?.updateComponentHover('live2d-speech-bubble', false);
       }}
       opacity={anchor.ready ? 1 : 0.96}
       bg="rgba(14, 20, 24, 0.96)"
@@ -296,6 +303,19 @@ export function Live2DSpeechBubble(): JSX.Element | null {
         <Text fontSize="xs" lineHeight="1.2" fontWeight="semibold" truncate>
           {bubble.label}
         </Text>
+        {language && (
+          <Badge
+            flexShrink={0}
+            borderRadius="4px"
+            bg="rgba(102, 154, 180, 0.2)"
+            color="#b7d9e9"
+            fontFamily="mono"
+            fontSize="2xs"
+            px="1.5"
+          >
+            {language}
+          </Badge>
+        )}
         {bubble.status === 'running' && (
           <Icon as={LuLoaderCircle} boxSize="3.5" ml="auto" animation="spin 1s linear infinite" />
         )}
@@ -305,17 +325,32 @@ export function Live2DSpeechBubble(): JSX.Element | null {
       </Flex>
       <Box
         ref={contentRef}
-        maxH="116px"
-        overflow="hidden"
+        maxH="min(360px, 42vh)"
+        overflowY="auto"
+        overflowX="hidden"
+        overscrollBehavior="contain"
         color="#eef3f5"
         fontSize="sm"
         lineHeight="1.55"
         whiteSpace="pre-wrap"
         overflowWrap="anywhere"
+        wordBreak="break-word"
+        userSelect="text"
+        pr="1.5"
+        onScroll={(event) => {
+          const element = event.currentTarget;
+          stickToBottomRef.current = (
+            element.scrollHeight - element.scrollTop - element.clientHeight < 24
+          );
+        }}
+        css={{
+          scrollbarWidth: 'thin',
+          scrollbarColor: `${accent} rgba(255, 255, 255, 0.06)`,
+        }}
       >
         {bubble.text}
       </Box>
-      {interactive && bubble.message && (
+      {permissionInteractive && bubble.message && (
         <Box mt="2.5" pt="2.5" borderTop="1px solid rgba(227, 194, 122, 0.24)">
           {bubble.message.tool_name === 'user_input' && questions.length > 0 && (
             <PermissionQuestionFields

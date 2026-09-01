@@ -14,7 +14,9 @@ export function useInputSubtitle() {
     handleCompositionStart,
     handleCompositionEnd,
     handleSend,
-
+    attachments,
+    addFiles,
+    removeAttachment,
   } = useTextInput();
 
   const { startMic, autoStartMicOn } = useVAD();
@@ -49,5 +51,8 @@ export function useInputSubtitle() {
     aiState,
     micOn,
     handleSend,
+    attachments,
+    addFiles,
+    removeAttachment,
   };
 }
