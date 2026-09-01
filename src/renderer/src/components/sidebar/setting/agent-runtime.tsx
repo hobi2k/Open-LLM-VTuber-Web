@@ -1114,19 +1114,6 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
               />
             </>
           )}
-          <NumberField
-            label={t("settings.agent.runtime.timeout")}
-            value={selectedRuntime.timeout}
-            onChange={(value) => {
-              if (isOpenCode) {
-                handleOpenCodeSettingChange("timeout", Number(value));
-                return;
-              }
-              handleCLISettingChange(runtimeKey, "timeout", Number(value));
-            }}
-            min={1}
-            step={1}
-          />
         </Stack>
       </Box>
 

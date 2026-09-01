@@ -147,13 +147,6 @@ function Agent({ onSave, onCancel }: AgentProps): JSX.Element {
             value={runtimeSettings.opencode.workspace_directory}
             onChange={(value) => handleOpenCodeSettingChange("workspace_directory", value)}
           />
-          <NumberField
-            label={t("settings.agent.runtime.timeout")}
-            value={runtimeSettings.opencode.timeout}
-            onChange={(value) => handleOpenCodeSettingChange("timeout", Number(value))}
-            min={1}
-            step={1}
-          />
           <SwitchField
             label={t("settings.agent.runtime.keepSessions")}
             checked={runtimeSettings.opencode.keep_sessions}
@@ -190,13 +183,6 @@ function Agent({ onSave, onCancel }: AgentProps): JSX.Element {
             label={t("settings.agent.runtime.workspace")}
             value={runtimeSettings[runtimeKey].workspace_directory}
             onChange={(value) => handleCLISettingChange(runtimeKey, "workspace_directory", value)}
-          />
-          <NumberField
-            label={t("settings.agent.runtime.timeout")}
-            value={runtimeSettings[runtimeKey].timeout}
-            onChange={(value) => handleCLISettingChange(runtimeKey, "timeout", Number(value))}
-            min={1}
-            step={1}
           />
         </>
       )}
