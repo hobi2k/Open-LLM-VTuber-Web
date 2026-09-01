@@ -313,6 +313,23 @@ export function useAgentSettings({
     }
   }, [persistedSettings]);
 
+  const refreshRuntimeCatalog = useCallback(
+    async (settings: AgentRuntimeSettings) => {
+      const response = await fetch(`${baseUrl}/api/agent-runtime/catalog`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(settingsRequest(settings)),
+      });
+      if (!response.ok) {
+        throw new Error(`Runtime catalog request failed (${response.status})`);
+      }
+      const catalog = (await response.json()) as RuntimeCatalog;
+      setRuntimeCatalog(catalog);
+      setCachedRuntimeCatalog(catalog);
+    },
+    [baseUrl, setCachedRuntimeCatalog],
+  );
+
   const loadRuntimeSettings = useCallback(async () => {
     setRuntimeState("loading");
     setRuntimeChecked(false);
@@ -330,29 +347,13 @@ export function useAgentSettings({
       setRuntimeSettings(payload);
       setOriginalRuntimeSettings(payload);
       setCachedRuntimeSettings(payload);
+      await refreshRuntimeCatalog(payload);
       setRuntimeState("ready");
     } catch (error) {
       setRuntimeError(error instanceof Error ? error.message : String(error));
       setRuntimeState("error");
     }
-  }, [baseUrl, setCachedRuntimeSettings]);
-
-  const refreshRuntimeCatalog = useCallback(
-    async (settings: AgentRuntimeSettings = runtimeSettings) => {
-      const response = await fetch(`${baseUrl}/api/agent-runtime/catalog`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(settingsRequest(settings)),
-      });
-      if (!response.ok) {
-        throw new Error(`Runtime catalog request failed (${response.status})`);
-      }
-      const catalog = (await response.json()) as RuntimeCatalog;
-      setRuntimeCatalog(catalog);
-      setCachedRuntimeCatalog(catalog);
-    },
-    [baseUrl, runtimeSettings, setCachedRuntimeCatalog],
-  );
+  }, [baseUrl, refreshRuntimeCatalog, setCachedRuntimeSettings]);
 
   useEffect(() => {
     if (wsState === "OPEN") loadRuntimeSettings();
