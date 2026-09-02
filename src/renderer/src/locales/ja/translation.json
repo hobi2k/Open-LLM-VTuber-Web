@@ -36,7 +36,14 @@
     },
     "live2d": {
       "pointerInteractive": "ポインター操作",
-      "scrollToResize": "スクロールでサイズ変更"
+      "scrollToResize": "スクロールでサイズ変更",
+      "speechBubblePlacement": "ペットの吹き出し位置",
+      "speechBubblePlacementHelp": "キャラクターの周囲で吹き出しを表示する位置を選びます。選択した側に空きがない場合は自動調整します。",
+      "speechBubblePlacements": {
+        "above": "キャラクターの上",
+        "left": "キャラクターの左",
+        "right": "キャラクターの右"
+      }
     },
     "asr": {
       "inputTitle": "音声認識",

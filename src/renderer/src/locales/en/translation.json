@@ -36,7 +36,14 @@
     },
     "live2d": {
       "pointerInteractive": "Pointer Interactive",
-      "scrollToResize": "Enable Scroll to Resize"
+      "scrollToResize": "Enable Scroll to Resize",
+      "speechBubblePlacement": "Pet speech bubble position",
+      "speechBubblePlacementHelp": "Choose where the speech bubble appears around the character. It automatically moves when the selected side has no room.",
+      "speechBubblePlacements": {
+        "above": "Above character",
+        "left": "Left of character",
+        "right": "Right of character"
+      }
     },
     "asr": {
       "inputTitle": "Speech recognition",

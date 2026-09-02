@@ -40,6 +40,12 @@ import {
   releasePermissionSubmission,
 } from '@/utils/permission-submission';
 import { MarkdownMessage } from '@/components/shared/markdown-message';
+import { usePetUi } from '@/context/pet-ui-context';
+import {
+  currentPetTurn,
+  latestPetDisplayMessage,
+  petSpeechBubblePosition,
+} from '@/utils/pet-speech-bubble';
 
 type BubbleKind = 'reasoning' | 'command' | 'file' | 'tool' | 'response' | 'permission';
 
@@ -74,30 +80,6 @@ function messageText(message: Message): string {
     .join('\n'));
 }
 
-function currentTurn(messages: Message[]): Message[] {
-  const latestHumanIndex = messages
-    .map((message) => message.role === 'human')
-    .lastIndexOf(true);
-  if (latestHumanIndex < 0) return [];
-  return messages.slice(latestHumanIndex);
-}
-
-function latestDisplayMessage(messages: Message[]): Message | undefined {
-  return currentTurn(messages)
-    .filter((message) => message.role === 'ai' && (
-      message.type === 'reasoning'
-      || message.type === 'agent_activity'
-      || message.type === 'permission'
-      || (message.type === 'text' && Boolean(message.content.trim()))
-    ))
-    .map((message, index) => ({ message, index }))
-    .sort((left, right) => (
-      new Date(right.message.timestamp).getTime()
-      - new Date(left.message.timestamp).getTime()
-      || right.index - left.index
-    ))[0]?.message;
-}
-
 function bubbleIcon(kind: BubbleKind): ComponentType<{ size?: number }> {
   if (kind === 'reasoning') return LuBrain;
   if (kind === 'command') return LuTerminal;
@@ -112,6 +94,7 @@ export function Live2DSpeechBubble(): JSX.Element | null {
   const { messages } = useChatHistory();
   const { sendMessage, wsState } = useWebSocket();
   const { aiState, isThinkingSpeaking } = useAiState();
+  const { bubblePlacement } = usePetUi();
   const anchor = useLive2DScreenAnchor();
   const bubbleRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -121,9 +104,9 @@ export function Live2DSpeechBubble(): JSX.Element | null {
   const [submitting, setSubmitting] = useState(false);
 
   const bubble = useMemo<BubbleContent | null>(() => {
-    const latest = latestDisplayMessage(messages);
+    const latest = latestPetDisplayMessage(messages);
     if (!latest) {
-      const turn = currentTurn(messages);
+      const turn = currentPetTurn(messages);
       if (!turn.length || !isThinkingSpeaking) return null;
       return {
         id: turn[0].id,
@@ -227,12 +210,21 @@ export function Live2DSpeechBubble(): JSX.Element | null {
   if (!bubble) return null;
 
   const width = Math.min(BUBBLE_WIDTH, window.innerWidth - VIEWPORT_MARGIN * 2);
-  const left = Math.max(
-    VIEWPORT_MARGIN,
-    Math.min(anchor.x - width / 2, window.innerWidth - width - VIEWPORT_MARGIN),
-  );
-  const top = Math.max(VIEWPORT_MARGIN, anchor.y - bubbleHeight - ANCHOR_GAP);
-  const tailLeft = Math.max(24, Math.min(anchor.x - left, width - 24));
+  const position = petSpeechBubblePosition({
+    placement: bubblePlacement,
+    anchor,
+    bubbleWidth: width,
+    bubbleHeight,
+    viewportWidth: window.innerWidth,
+    viewportHeight: window.innerHeight,
+    margin: VIEWPORT_MARGIN,
+    gap: ANCHOR_GAP,
+  });
+  const tailLeft = {
+    above: `${position.tailOffset - 8}px`,
+    left: undefined,
+    right: '-8px',
+  }[position.placement];
   const BubbleIcon = bubbleIcon(bubble.kind);
   const accentByKind: Record<BubbleKind, string> = {
     reasoning: '#8ec5e6',
@@ -278,8 +270,8 @@ export function Live2DSpeechBubble(): JSX.Element | null {
       role="status"
       aria-live="polite"
       position="fixed"
-      left={`${left}px`}
-      top={`${top}px`}
+      left={`${position.left}px`}
+      top={`${position.top}px`}
       width={`${width}px`}
       zIndex={900}
       pointerEvents="auto"
@@ -402,13 +394,25 @@ export function Live2DSpeechBubble(): JSX.Element | null {
       <Box
         aria-hidden="true"
         position="absolute"
-        left={`${tailLeft - 8}px`}
-        bottom="-8px"
+        left={tailLeft}
+        right={position.placement === 'left' ? '-8px' : undefined}
+        top={position.placement === 'above' ? undefined : `${position.tailOffset - 8}px`}
+        bottom={position.placement === 'above' ? '-8px' : undefined}
         width="16px"
         height="16px"
         bg="rgba(14, 20, 24, 0.96)"
-        borderRight="1px solid rgba(190, 208, 218, 0.42)"
-        borderBottom="1px solid rgba(190, 208, 218, 0.42)"
+        borderTop={position.placement === 'left'
+          ? '1px solid rgba(190, 208, 218, 0.42)'
+          : undefined}
+        borderRight={position.placement !== 'right'
+          ? '1px solid rgba(190, 208, 218, 0.42)'
+          : undefined}
+        borderBottom={position.placement !== 'left'
+          ? '1px solid rgba(190, 208, 218, 0.42)'
+          : undefined}
+        borderLeft={position.placement === 'right'
+          ? '1px solid rgba(190, 208, 218, 0.42)'
+          : undefined}
         transform="rotate(45deg)"
       />
     </Box>

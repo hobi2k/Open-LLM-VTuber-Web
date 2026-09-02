@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { ModelInfo, useLive2DConfig } from '@/context/live2d-config-context';
+import { PetBubblePlacement, usePetUi } from '@/context/pet-ui-context';
 
 export const useLive2dSettings = () => {
   const Live2DConfigContext = useLive2DConfig();
+  const { bubblePlacement, setBubblePlacement } = usePetUi();
 
   const initialModelInfo: ModelInfo = {
     url: '',
@@ -18,6 +20,10 @@ export const useLive2dSettings = () => {
   );
   const [originalModelInfo, setOriginalModelInfo] = useState<ModelInfo>(
     Live2DConfigContext?.modelInfo || initialModelInfo,
+  );
+  const [speechBubblePlacement, setSpeechBubblePlacement] = useState(bubblePlacement);
+  const [originalSpeechBubblePlacement, setOriginalSpeechBubblePlacement] = useState(
+    bubblePlacement,
   );
 
   useEffect(() => {
@@ -35,6 +41,10 @@ export const useLive2dSettings = () => {
     }
   }, [modelInfo.pointerInteractive, modelInfo.scrollToResize]);
 
+  useEffect(() => {
+    setBubblePlacement(speechBubblePlacement);
+  }, [setBubblePlacement, speechBubblePlacement]);
+
   const handleInputChange = (key: keyof ModelInfo, value: ModelInfo[keyof ModelInfo]): void => {
     setModelInfoState((prev) => ({ ...prev, [key]: value }));
   };
@@ -43,6 +53,7 @@ export const useLive2dSettings = () => {
     if (Live2DConfigContext && modelInfo) {
       setOriginalModelInfo(modelInfo);
     }
+    setOriginalSpeechBubblePlacement(speechBubblePlacement);
   };
 
   const handleCancel = (): void => {
@@ -50,11 +61,19 @@ export const useLive2dSettings = () => {
     if (Live2DConfigContext && originalModelInfo) {
       Live2DConfigContext.setModelInfo(originalModelInfo);
     }
+    setSpeechBubblePlacement(originalSpeechBubblePlacement);
+    setBubblePlacement(originalSpeechBubblePlacement);
+  };
+
+  const handleSpeechBubblePlacementChange = (placement: PetBubblePlacement): void => {
+    setSpeechBubblePlacement(placement);
   };
 
   return {
     modelInfo,
+    speechBubblePlacement,
     handleInputChange,
+    handleSpeechBubblePlacementChange,
     handleSave,
     handleCancel,
   };

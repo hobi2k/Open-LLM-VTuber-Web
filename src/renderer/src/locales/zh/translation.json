@@ -36,7 +36,14 @@
     },
     "live2d": {
       "pointerInteractive": "鼠标交互",
-      "scrollToResize": "启用滚轮缩放"
+      "scrollToResize": "启用滚轮缩放",
+      "speechBubblePlacement": "桌面宠物气泡位置",
+      "speechBubblePlacementHelp": "选择气泡显示在角色周围的位置。所选方向空间不足时会自动调整。",
+      "speechBubblePlacements": {
+        "above": "角色上方",
+        "left": "角色左侧",
+        "right": "角色右侧"
+      }
     },
     "asr": {
       "inputTitle": "语音识别",

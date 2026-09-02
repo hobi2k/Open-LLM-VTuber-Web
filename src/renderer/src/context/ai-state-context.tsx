@@ -85,16 +85,18 @@ export const AiStateContext = createContext<AiStateContextType | null>(null);
  */
 export function AiStateProvider({ children }: { children: ReactNode }) {
   const [aiState, setAiStateInternal] = useState<AiState>(initialState);
+  const aiStateRef = useRef<AiState>(initialState);
   const [backendSynthComplete, setBackendSynthComplete] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const setAiState = useCallback((newState: AiState | ((currentState: AiState) => AiState)) => {
     const nextState = typeof newState === 'function'
-      ? (newState as (currentState: AiState) => AiState)(aiState)
+      ? (newState as (currentState: AiState) => AiState)(aiStateRef.current)
       : newState;
 
     if (nextState === AiStateEnum.WAITING) {
-      if (aiState !== AiStateEnum.THINKING_SPEAKING) {
+      if (aiStateRef.current !== AiStateEnum.THINKING_SPEAKING) {
+        aiStateRef.current = nextState;
         setAiStateInternal(nextState);
 
         if (timerRef.current) {
@@ -102,18 +104,20 @@ export function AiStateProvider({ children }: { children: ReactNode }) {
         }
 
         timerRef.current = setTimeout(() => {
+          aiStateRef.current = AiStateEnum.IDLE;
           setAiStateInternal(AiStateEnum.IDLE);
           timerRef.current = null;
         }, 2000);
       }
     } else {
+      aiStateRef.current = nextState;
       setAiStateInternal(nextState);
       if (timerRef.current) {
         clearTimeout(timerRef.current);
         timerRef.current = null;
       }
     }
-  }, [aiState]);
+  }, []);
 
   // Memoized state checks
   const stateChecks = useMemo(

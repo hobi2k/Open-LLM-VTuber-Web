@@ -1,11 +1,12 @@
 /* eslint-disable import/no-extraneous-dependencies */
 /* eslint-disable react-hooks/rules-of-hooks */
-import { Stack } from '@chakra-ui/react';
+import { createListCollection, Stack } from '@chakra-ui/react';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { settingStyles } from './setting-styles';
 import { useLive2dSettings } from '@/hooks/sidebar/setting/use-live2d-settings';
-import { SwitchField } from './common';
+import { SelectField, SwitchField } from './common';
+import { PetBubblePlacement } from '@/context/pet-ui-context';
 
 interface live2DProps {
   onSave?: (callback: () => void) => () => void
@@ -16,10 +17,19 @@ function live2D({ onSave, onCancel }: live2DProps): JSX.Element {
   const { t } = useTranslation();
   const {
     modelInfo,
+    speechBubblePlacement,
     handleInputChange,
+    handleSpeechBubblePlacementChange,
     handleSave,
     handleCancel,
   } = useLive2dSettings();
+  const bubblePlacements = createListCollection({
+    items: [
+      { label: t('settings.live2d.speechBubblePlacements.above'), value: 'above' },
+      { label: t('settings.live2d.speechBubblePlacements.left'), value: 'left' },
+      { label: t('settings.live2d.speechBubblePlacements.right'), value: 'right' },
+    ],
+  });
 
   useEffect(() => {
     if (!onSave || !onCancel) return;
@@ -45,6 +55,17 @@ function live2D({ onSave, onCancel }: live2DProps): JSX.Element {
         label={t('settings.live2d.scrollToResize')}
         checked={modelInfo.scrollToResize ?? true}
         onChange={(checked) => handleInputChange('scrollToResize', checked)}
+      />
+
+      <SelectField
+        label={t('settings.live2d.speechBubblePlacement')}
+        value={[speechBubblePlacement]}
+        onChange={(value) => {
+          if (value[0]) handleSpeechBubblePlacementChange(value[0] as PetBubblePlacement);
+        }}
+        collection={bubblePlacements}
+        placeholder={t('settings.live2d.speechBubblePlacement')}
+        help={t('settings.live2d.speechBubblePlacementHelp')}
       />
     </Stack>
   );

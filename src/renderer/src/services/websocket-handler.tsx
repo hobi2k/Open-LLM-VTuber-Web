@@ -103,19 +103,15 @@ function WebSocketHandler({ children }: { children: React.ReactNode }) {
         if (subtitleText === 'Thinking...') {
           setSubtitleText('');
         }
-        audioTaskQueue.addTask(() => new Promise<void>((resolve) => {
-          setAiState((currentState: AiState) => {
-            if (currentState === 'thinking-speaking') {
-              // Auto start mic if enabled
-              if (autoStartMicOnConvEndRef.current) {
-                startMic();
-              }
-              return 'idle';
-            }
-            return currentState;
-          });
-          resolve();
-        }));
+        setAiState((currentState: AiState) => (
+          currentState === 'thinking-speaking' ? 'idle' : currentState
+        ));
+        if (autoStartMicOnConvEndRef.current) {
+          audioTaskQueue.addTask(() => new Promise<void>((resolve) => {
+            startMic();
+            resolve();
+          }));
+        }
         break;
       default:
         console.warn('Unknown control command:', controlText);
@@ -261,6 +257,10 @@ function WebSocketHandler({ children }: { children: React.ReactNode }) {
         }
         break;
       case 'error':
+        finishRunningReasoning();
+        setAiState((currentState: AiState) => (
+          currentState === 'thinking-speaking' ? 'idle' : currentState
+        ));
         toaster.create({
           title: message.message,
           type: 'error',
@@ -291,14 +291,9 @@ function WebSocketHandler({ children }: { children: React.ReactNode }) {
         if (subtitleText === 'Thinking...') {
           setSubtitleText('');
         }
-        if (!audioTaskQueue.hasTask()) {
-          setAiState((currentState: AiState) => {
-            if (currentState === 'thinking-speaking') {
-              return 'idle';
-            }
-            return currentState;
-          });
-        }
+        setAiState((currentState: AiState) => (
+          currentState === 'thinking-speaking' ? 'idle' : currentState
+        ));
         break;
       case 'force-new-message':
         setForceNewMessage(true);
