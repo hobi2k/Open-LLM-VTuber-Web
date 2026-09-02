@@ -45,6 +45,7 @@ import {
   isPermissionSubmissionPending,
   releasePermissionSubmission,
 } from "@/utils/permission-submission";
+import { MarkdownMessage } from "@/components/shared/markdown-message";
 
 function formatTime(timestamp: string): string {
   const date = new Date(timestamp);
@@ -106,16 +107,15 @@ function ReasoningMessage({ message }: { message: Message }): JSX.Element {
         </Text>
       </Flex>
       {message.content && (
-        <Text
+        <Box
           color="#aeb9c1"
           fontSize="xs"
           lineHeight="1.65"
-          whiteSpace="pre-wrap"
           overflowWrap="anywhere"
           mt="1.5"
         >
-          {message.content}
-        </Text>
+          <MarkdownMessage content={message.content} />
+        </Box>
       )}
     </Box>
   );
@@ -671,16 +671,18 @@ function ChatHistoryPanel(): JSX.Element {
                       px="3.5"
                       py="2.5"
                     >
-                      <Text
+                      <Box
                         color="#e2e7ea"
                         fontSize="sm"
                         lineHeight="1.62"
-                        whiteSpace="pre-wrap"
+                        whiteSpace={isAI ? "normal" : "pre-wrap"}
                         overflowWrap="anywhere"
                         wordBreak="break-word"
                       >
-                        {message.content}
-                      </Text>
+                        {isAI ? (
+                          <MarkdownMessage content={message.content} />
+                        ) : message.content}
+                      </Box>
                     </Box>
                   </Box>
                   {!isAI && <MessageAvatar name={name} kind="human" />}

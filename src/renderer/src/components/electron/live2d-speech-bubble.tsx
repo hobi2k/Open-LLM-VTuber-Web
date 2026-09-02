@@ -39,6 +39,7 @@ import {
   isPermissionSubmissionPending,
   releasePermissionSubmission,
 } from '@/utils/permission-submission';
+import { MarkdownMessage } from '@/components/shared/markdown-message';
 
 type BubbleKind = 'reasoning' | 'command' | 'file' | 'tool' | 'response' | 'permission';
 
@@ -332,7 +333,9 @@ export function Live2DSpeechBubble(): JSX.Element | null {
         color="#eef3f5"
         fontSize="sm"
         lineHeight="1.55"
-        whiteSpace="pre-wrap"
+        whiteSpace={bubble.kind === 'response' || bubble.kind === 'reasoning'
+          ? 'normal'
+          : 'pre-wrap'}
         overflowWrap="anywhere"
         wordBreak="break-word"
         userSelect="text"
@@ -348,7 +351,9 @@ export function Live2DSpeechBubble(): JSX.Element | null {
           scrollbarColor: `${accent} rgba(255, 255, 255, 0.06)`,
         }}
       >
-        {bubble.text}
+        {bubble.kind === 'response' || bubble.kind === 'reasoning' ? (
+          <MarkdownMessage content={bubble.text} compact />
+        ) : bubble.text}
       </Box>
       {permissionInteractive && bubble.message && (
         <Box mt="2.5" pt="2.5" borderTop="1px solid rgba(227, 194, 122, 0.24)">
