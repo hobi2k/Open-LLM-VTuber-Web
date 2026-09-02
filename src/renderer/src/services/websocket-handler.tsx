@@ -39,7 +39,7 @@ function WebSocketHandler({ children }: { children: React.ReactNode }) {
     appendOrUpdatePermissionMessage,
     finishRunningReasoning,
   } = useChatHistory();
-  const { addAudioTask } = useAudioTask();
+  const { addAudioTask, displayTextWithoutAudio } = useAudioTask();
   const bgUrlContext = useBgUrl();
   const { confUid, setConfName, setConfUid, setConfigFiles } = useConfig();
   const [pendingModelInfo, setPendingModelInfo] = useState<ModelInfo | undefined>(undefined);
@@ -193,14 +193,19 @@ function WebSocketHandler({ children }: { children: React.ReactNode }) {
           console.log('Audio playback intercepted. Sentence:', message.display_text?.text);
         } else {
           console.log("actions", message.actions);
-          addAudioTask({
+          const task = {
             audioBase64: message.audio || '',
             volumes: message.volumes || [],
             sliceLength: message.slice_length || 0,
             displayText: message.display_text || null,
             expressions: message.actions?.expressions || null,
             forwarded: message.forwarded || false,
-          });
+          };
+          if (message.audio) {
+            addAudioTask(task);
+          } else {
+            displayTextWithoutAudio(task);
+          }
         }
         break;
       case 'history-data':
@@ -393,7 +398,7 @@ function WebSocketHandler({ children }: { children: React.ReactNode }) {
       default:
         console.warn('Unknown message type:', message.type);
     }
-  }, [aiState, addAudioTask, appendHumanMessage, baseUrl, bgUrlContext, setAiState, setConfName, setConfUid, setConfigFiles, setCurrentHistoryUid, setHistoryList, setMessages, setModelInfo, setSubtitleText, startMic, stopMic, subtitleText, setSelfUid, setGroupMembers, setIsOwner, backendSynthComplete, setBackendSynthComplete, clearResponse, finishRunningReasoning, handleControlMessage, appendOrUpdateToolCallMessage, appendOrUpdateReasoningMessage, appendOrUpdateActivityMessage, appendOrUpdatePermissionMessage, interrupt, setBrowserViewData, t]);
+  }, [aiState, addAudioTask, displayTextWithoutAudio, appendHumanMessage, baseUrl, bgUrlContext, setAiState, setConfName, setConfUid, setConfigFiles, setCurrentHistoryUid, setHistoryList, setMessages, setModelInfo, setSubtitleText, startMic, stopMic, subtitleText, setSelfUid, setGroupMembers, setIsOwner, backendSynthComplete, setBackendSynthComplete, clearResponse, finishRunningReasoning, handleControlMessage, appendOrUpdateToolCallMessage, appendOrUpdateReasoningMessage, appendOrUpdateActivityMessage, appendOrUpdatePermissionMessage, interrupt, setBrowserViewData, t]);
 
   useEffect(() => {
     const stateSubscription = wsService.onStateChange(setWsState);

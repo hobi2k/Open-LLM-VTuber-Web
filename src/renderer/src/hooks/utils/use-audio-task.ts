@@ -251,8 +251,20 @@ export const useAudioTask = () => {
     audioTaskQueue.addTask(() => handleAudioPlayback(options));
   };
 
+  const displayTextWithoutAudio = (options: AudioTaskOptions): void => {
+    const { aiState: currentState } = stateRef.current;
+    if (currentState === 'interrupted') return;
+    handleAudioPlayback({
+      ...options,
+      audioBase64: '',
+      volumes: [],
+      sliceLength: 0,
+    });
+  };
+
   return {
     addAudioTask,
+    displayTextWithoutAudio,
     appendResponse,
     stopCurrentAudioAndLipSync,
   };
