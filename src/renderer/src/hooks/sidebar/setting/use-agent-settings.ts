@@ -119,6 +119,7 @@ export interface OpenCodeRuntimeSettings {
   launch_mode: LaunchMode;
   interaction_mode: InteractionMode;
   session_id: string;
+  new_session_title: string;
   workspace_directory: string;
   timeout: number;
   keep_sessions: boolean;
@@ -134,6 +135,7 @@ export interface CLIRuntimeSettings {
   launch_mode: LaunchMode;
   interaction_mode: InteractionMode;
   session_id: string;
+  new_session_title: string;
   model: string;
   provider: string;
   workspace_directory: string;
@@ -187,6 +189,7 @@ const defaultRuntimeSettings: AgentRuntimeSettings = {
     launch_mode: "direct",
     interaction_mode: "character",
     session_id: "",
+    new_session_title: "",
     workspace_directory: ".",
     timeout: 300,
     keep_sessions: false,
@@ -212,6 +215,7 @@ const defaultRuntimeSettings: AgentRuntimeSettings = {
     launch_mode: "direct",
     interaction_mode: "character",
     session_id: "",
+    new_session_title: "",
     model: "",
     provider: "",
     workspace_directory: ".",
@@ -227,6 +231,7 @@ const defaultRuntimeSettings: AgentRuntimeSettings = {
     launch_mode: "direct",
     interaction_mode: "character",
     session_id: "",
+    new_session_title: "",
     model: "",
     provider: "",
     workspace_directory: ".",
@@ -242,6 +247,7 @@ const defaultRuntimeSettings: AgentRuntimeSettings = {
     launch_mode: "direct",
     interaction_mode: "character",
     session_id: "",
+    new_session_title: "",
     model: "",
     provider: "",
     workspace_directory: ".",
@@ -430,6 +436,7 @@ export function useAgentSettings({
             ...previous.opencode,
             workspace_directory: path,
             session_id: "",
+            new_session_title: "",
           },
         };
       }
@@ -444,6 +451,7 @@ export function useAgentSettings({
           ...previous[runtime],
           workspace_directory: path,
           session_id: "",
+          new_session_title: "",
         },
       };
     });

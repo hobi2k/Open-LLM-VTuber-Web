@@ -475,9 +475,11 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
     if (session?.workspace) changeWorkspace(session.workspace);
     if (isOpenCode) {
       handleOpenCodeSettingChange("session_id", sessionId);
+      handleOpenCodeSettingChange("new_session_title", "");
       return;
     }
     handleCLISettingChange(runtimeKey, "session_id", sessionId);
+    handleCLISettingChange(runtimeKey, "new_session_title", "");
   };
 
   const openProjectPicker = async (): Promise<void> => {
@@ -497,15 +499,23 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
   };
 
   const openRenameDialog = (): void => {
-    if (!selectedSession) return;
-    setRenameTitle(selectedSession.title);
+    setRenameTitle(selectedSession?.title || selectedRuntime.new_session_title);
     setRenameError(null);
     setRenameDialogOpen(true);
   };
 
   const renameSelectedSession = async (): Promise<void> => {
     const title = renameTitle.trim();
-    if (!selectedSession || !title) return;
+    if (!title) return;
+    if (!selectedSession) {
+      if (isOpenCode) {
+        handleOpenCodeSettingChange("new_session_title", title);
+      } else {
+        handleCLISettingChange(runtimeKey, "new_session_title", title);
+      }
+      setRenameDialogOpen(false);
+      return;
+    }
     if (title === selectedSession.title) {
       setRenameDialogOpen(false);
       return;
@@ -1030,10 +1040,13 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
             value={selectedRuntime.session_id}
             onInput={changeSession}
             choices={sessionChoices}
-            placeholder={t("settings.agent.runtime.selectConversation")}
+            placeholder={
+              selectedRuntime.new_session_title ||
+              t("settings.agent.runtime.selectConversation")
+            }
             emptyText={t("settings.agent.runtime.noMatches")}
             help={[
-              selectedSession?.title,
+              selectedSession?.title || selectedRuntime.new_session_title,
               sessionScope === "all"
                 ? t("settings.agent.runtime.sessionCount", {
                   count: sessionOptions.length,
@@ -1063,7 +1076,6 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
           whiteSpace="nowrap"
           _hover={{ bg: "#20282f", borderColor: "#4a5966" }}
           onClick={openRenameDialog}
-          disabled={!selectedSession}
         >
           <HiPencilSquare />
           <Text as="span" fontSize="xs">
