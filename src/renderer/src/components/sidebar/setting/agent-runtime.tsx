@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Badge,
   Box,
@@ -15,6 +15,7 @@ import { useTranslation } from "react-i18next";
 import {
   HiArrowPath,
   HiChevronDown,
+  HiClock,
   HiCommandLine,
   HiFolderPlus,
   HiPencilSquare,
@@ -105,6 +106,11 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
     runtimeState,
     runtimeChecked,
     runtimeError,
+    runtimeHistoryState,
+    runtimeHistoryCount,
+    runtimeHistoryTotal,
+    runtimeHistoryTruncated,
+    runtimeHistoryError,
     handleRuntimeProviderChange,
     handleOpenCodeSettingChange,
     handleCLISettingChange,
@@ -112,6 +118,7 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
     addRuntimeProject,
     selectRuntimeProject,
     renameRuntimeSession,
+    loadRuntimeSessionHistory,
     loadRuntimeSettings,
     checkRuntimeConnections,
     saveRuntimeSettings,
@@ -125,6 +132,7 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
   const [sessionScope, setSessionScope] = useState<"all" | "project">("all");
   const [recoveryBaseUrl, setRecoveryBaseUrl] = useState(baseUrl);
   const [recoveryWsUrl, setRecoveryWsUrl] = useState(wsUrl);
+  const loadedHistory = useRef("");
 
   useEffect(() => setRecoveryBaseUrl(baseUrl), [baseUrl]);
   useEffect(() => setRecoveryWsUrl(wsUrl), [wsUrl]);
@@ -343,6 +351,28 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
   const selectedSession = sessionOptions.find(
     (session) => session.id === selectedRuntime.session_id,
   );
+  const catalogSession = runtimeCatalog.sessions[runtimeKey].find(
+    (session) => session.id === selectedRuntime.session_id,
+  );
+
+  useEffect(() => {
+    if (runtimeState !== "ready" || !catalogSession) return;
+    const key = [runtimeKey, catalogSession.id, selectedRuntime.show_reasoning]
+      .join(":");
+    if (loadedHistory.current === key) return;
+    loadedHistory.current = key;
+    loadRuntimeSessionHistory(
+      runtimeKey,
+      catalogSession,
+      selectedRuntime.show_reasoning,
+    );
+  }, [
+    catalogSession,
+    loadRuntimeSessionHistory,
+    runtimeKey,
+    runtimeState,
+    selectedRuntime.show_reasoning,
+  ]);
   const detectedExecutable = runtimeCatalog.executables[runtimeKey];
   const executableChoices = useMemo<EditableChoice[]>(() => {
     const choices: EditableChoice[] = [
@@ -480,6 +510,14 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
     }
     handleCLISettingChange(runtimeKey, "session_id", sessionId);
     handleCLISettingChange(runtimeKey, "new_session_title", "");
+  };
+
+  const loadSelectedSessionHistory = (): void => {
+    loadRuntimeSessionHistory(
+      runtimeKey,
+      selectedSession || null,
+      selectedRuntime.show_reasoning,
+    );
   };
 
   const openProjectPicker = async (): Promise<void> => {
@@ -1039,6 +1077,15 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
             label={t("settings.agent.runtime.conversation")}
             value={selectedRuntime.session_id}
             onInput={changeSession}
+            onSelect={(choice) => {
+              if (choice.key === "__new__") {
+                loadRuntimeSessionHistory(
+                  runtimeKey,
+                  null,
+                  selectedRuntime.show_reasoning,
+                );
+              }
+            }}
             choices={sessionChoices}
             placeholder={
               selectedRuntime.new_session_title ||
@@ -1063,6 +1110,24 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
           />
         </Box>
         <Button
+          aria-label={t("settings.agent.runtime.loadConversationHistory")}
+          title={t("settings.agent.runtime.loadConversationHistory")}
+          variant="outline"
+          size="sm"
+          minW="9"
+          minH="40px"
+          px="2"
+          borderColor="#34404a"
+          color="#cbd3da"
+          _hover={{ bg: "#20282f", borderColor: "#4a5966" }}
+          onClick={loadSelectedSessionHistory}
+          disabled={
+            !selectedRuntime.session_id || runtimeHistoryState === "loading"
+          }
+        >
+          <HiClock />
+        </Button>
+        <Button
           aria-label={t("settings.agent.runtime.renameConversation")}
           title={t("settings.agent.runtime.renameConversation")}
           variant="outline"
@@ -1083,6 +1148,32 @@ function AgentRuntime({ onSave, onCancel }: AgentProps): JSX.Element {
           </Text>
         </Button>
       </Flex>
+
+      {runtimeHistoryState !== "idle" && (
+        <Text
+          color={runtimeHistoryState === "error" ? "#f09aa0" : "#82919d"}
+          fontSize="2xs"
+          lineHeight="1.5"
+          overflowWrap="anywhere"
+          mt="-1"
+        >
+          {runtimeHistoryState === "loading" &&
+            t("settings.agent.runtime.loadingConversationHistory")}
+          {runtimeHistoryState === "ready" &&
+            t(
+              runtimeHistoryTruncated
+                ? "settings.agent.runtime.conversationHistoryPartiallyLoaded"
+                : "settings.agent.runtime.conversationHistoryLoaded",
+              {
+                count: runtimeHistoryCount,
+                total: runtimeHistoryTotal,
+              },
+            )}
+          {runtimeHistoryState === "error" &&
+            (runtimeHistoryError ||
+              t("settings.agent.runtime.conversationHistoryFailed"))}
+        </Text>
+      )}
 
       <Box as="details" borderTopWidth="1px" borderColor="#273038" pt="3.5">
         <Flex

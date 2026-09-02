@@ -1,4 +1,6 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, {
+  useCallback, useEffect, useRef, useState,
+} from 'react';
 import { useVAD, VADSettings } from '@/context/vad-context';
 
 export const useASRSettings = () => {
@@ -29,7 +31,7 @@ export const useASRSettings = () => {
     setLocalAutoStartMicOnConvEnd(autoStartMicOnConvEnd);
   }, [autoStopMic, autoStartMicOn, autoStartMicOnConvEnd]);
 
-  const handleInputChange = (key: keyof VADSettings, value: number | string): void => {
+  const handleInputChange = useCallback((key: keyof VADSettings, value: number | string): void => {
     if (value === '' || value === '-') {
       localSettingsRef.current = { ...localSettingsRef.current, [key]: value };
     } else {
@@ -40,32 +42,37 @@ export const useASRSettings = () => {
       }
     }
     forceUpdate();
-  };
+  }, []);
 
-  const handleVoiceInterruptionChange = (value: boolean) => {
+  const handleVoiceInterruptionChange = useCallback((value: boolean) => {
     setLocalVoiceInterruption(value);
     setAutoStopMic(value);
-  };
+  }, [setAutoStopMic]);
 
-  const handleAutoStartMicChange = (value: boolean) => {
+  const handleAutoStartMicChange = useCallback((value: boolean) => {
     setLocalAutoStartMic(value);
     setAutoStartMicOn(value);
-  };
+  }, [setAutoStartMicOn]);
 
-  const handleAutoStartMicOnConvEndChange = (value: boolean) => {
+  const handleAutoStartMicOnConvEndChange = useCallback((value: boolean) => {
     setLocalAutoStartMicOnConvEnd(value);
     setAutoStartMicOnConvEnd(value);
-  };
+  }, [setAutoStartMicOnConvEnd]);
 
-  const handleSave = (): void => {
+  const handleSave = useCallback((): void => {
     updateSettings(localSettingsRef.current);
     originalSettingsRef.current = localSettingsRef.current;
     originalAutoStopMicRef.current = localVoiceInterruption;
     originalAutoStartMicOnRef.current = localAutoStartMic;
     originalAutoStartMicOnConvEndRef.current = localAutoStartMicOnConvEnd;
-  };
+  }, [
+    localAutoStartMic,
+    localAutoStartMicOnConvEnd,
+    localVoiceInterruption,
+    updateSettings,
+  ]);
 
-  const handleCancel = (): void => {
+  const handleCancel = useCallback((): void => {
     localSettingsRef.current = originalSettingsRef.current;
     setLocalVoiceInterruption(originalAutoStopMicRef.current);
     setLocalAutoStartMic(originalAutoStartMicOnRef.current);
@@ -74,7 +81,7 @@ export const useASRSettings = () => {
     setLocalAutoStartMicOnConvEnd(originalAutoStartMicOnConvEndRef.current);
     setAutoStartMicOnConvEnd(originalAutoStartMicOnConvEndRef.current);
     forceUpdate();
-  };
+  }, [setAutoStartMicOn, setAutoStartMicOnConvEnd, setAutoStopMic]);
 
   return {
     localSettings: localSettingsRef.current,

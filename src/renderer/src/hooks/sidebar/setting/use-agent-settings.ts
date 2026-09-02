@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useProactiveSpeak } from "@/context/proactive-speak-context";
 import { useWebSocket } from "@/context/websocket-context";
 import { useChatHistory } from "@/context/chat-history-context";
 import { useLocalStorage } from "@/hooks/utils/use-local-storage";
+import { Message } from "@/services/websocket-service";
 
 interface UseAgentSettingsProps {
   onSave?: (callback: () => void) => () => void;
@@ -108,6 +109,14 @@ interface RuntimeConnections {
   claude_code: CLIConnection;
   codex: CLIConnection;
   hermes: CLIConnection;
+}
+
+interface RuntimeSessionHistory {
+  runtime: RuntimeCatalogKey;
+  session_id: string;
+  messages: Message[];
+  total: number;
+  truncated: boolean;
 }
 
 export interface OpenCodeRuntimeSettings {
@@ -284,7 +293,8 @@ export function useAgentSettings({
 }: UseAgentSettingsProps = {}) {
   const { settings: persistedSettings, updateSettings } = useProactiveSpeak();
   const { baseUrl, wsState } = useWebSocket();
-  const { clearReasoningMessages } = useChatHistory();
+  const { clearReasoningMessages, setMessages } = useChatHistory();
+  const historyRequest = useRef(0);
   const [tempSettings, setTempSettings] = useState({
     allowProactiveSpeak: persistedSettings.allowProactiveSpeak,
     idleSecondsToSpeak: persistedSettings.idleSecondsToSpeak,
@@ -311,6 +321,15 @@ export function useAgentSettings({
   >("ready");
   const [runtimeChecked, setRuntimeChecked] = useState(false);
   const [runtimeError, setRuntimeError] = useState<string | null>(null);
+  const [runtimeHistoryState, setRuntimeHistoryState] = useState<
+    "idle" | "loading" | "ready" | "error"
+  >("idle");
+  const [runtimeHistoryCount, setRuntimeHistoryCount] = useState(0);
+  const [runtimeHistoryTotal, setRuntimeHistoryTotal] = useState(0);
+  const [runtimeHistoryTruncated, setRuntimeHistoryTruncated] = useState(false);
+  const [runtimeHistoryError, setRuntimeHistoryError] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     if (persistedSettings) {
@@ -517,6 +536,70 @@ export function useAgentSettings({
     [baseUrl, refreshRuntimeCatalog, runtimeSettings],
   );
 
+  const loadRuntimeSessionHistory = useCallback(
+    async (
+      runtime: RuntimeCatalogKey,
+      session: RuntimeSession | null,
+      showReasoning: boolean,
+    ) => {
+      const request = historyRequest.current + 1;
+      historyRequest.current = request;
+      setRuntimeHistoryError(null);
+      if (!session?.id) {
+        setMessages([]);
+        setRuntimeHistoryCount(0);
+        setRuntimeHistoryTotal(0);
+        setRuntimeHistoryTruncated(false);
+        setRuntimeHistoryState("idle");
+        return true;
+      }
+      setRuntimeHistoryState("loading");
+      try {
+        const response = await fetch(
+          `${baseUrl}/api/agent-runtime/session-history`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              runtime,
+              session_id: session.id,
+              workspace: session.workspace,
+              limit: 1000,
+            }),
+          },
+        );
+        if (!response.ok) {
+          const error = (await response.json().catch(() => null)) as {
+            detail?: string;
+          } | null;
+          throw new Error(
+            error?.detail || `Session history request failed (${response.status})`,
+          );
+        }
+        const payload = (await response.json()) as RuntimeSessionHistory;
+        if (request !== historyRequest.current) return false;
+        setMessages(
+          showReasoning
+            ? payload.messages
+            : payload.messages.filter((message) => message.type !== "reasoning"),
+        );
+        setRuntimeHistoryCount(payload.messages.length);
+        setRuntimeHistoryTotal(payload.total);
+        setRuntimeHistoryTruncated(payload.truncated);
+        setRuntimeHistoryState("ready");
+        return true;
+      } catch (error) {
+        if (request !== historyRequest.current) return false;
+        setRuntimeHistoryError(
+          error instanceof Error ? error.message : String(error),
+        );
+        setRuntimeHistoryState("error");
+        return false;
+      }
+    },
+    [baseUrl, setMessages],
+  );
+
   const saveRuntimeSettings = useCallback(async () => {
     setRuntimeState("saving");
     setRuntimeError(null);
@@ -540,6 +623,24 @@ export function useAgentSettings({
         hermes_cli_llm: payload.hermes,
       }[payload.provider];
       if (!selectedRuntime.show_reasoning) clearReasoningMessages();
+      const runtime = {
+        opencode_llm: "opencode",
+        claude_code_llm: "claude_code",
+        codex_cli_llm: "codex",
+        hermes_cli_llm: "hermes",
+      }[payload.provider] as RuntimeCatalogKey;
+      if (selectedRuntime.session_id) {
+        await loadRuntimeSessionHistory(
+          runtime,
+          {
+            id: selectedRuntime.session_id,
+            title: selectedRuntime.new_session_title,
+            workspace: selectedRuntime.workspace_directory,
+            updated_at: null,
+          },
+          selectedRuntime.show_reasoning,
+        );
+      }
       setRuntimeState("ready");
     } catch (error) {
       setRuntimeError(error instanceof Error ? error.message : String(error));
@@ -548,6 +649,7 @@ export function useAgentSettings({
   }, [
     baseUrl,
     clearReasoningMessages,
+    loadRuntimeSessionHistory,
     runtimeSettings,
     setCachedRuntimeSettings,
   ]);
@@ -623,6 +725,11 @@ export function useAgentSettings({
     runtimeState,
     runtimeChecked,
     runtimeError,
+    runtimeHistoryState,
+    runtimeHistoryCount,
+    runtimeHistoryTotal,
+    runtimeHistoryTruncated,
+    runtimeHistoryError,
     handleRuntimeProviderChange,
     handleOpenCodeSettingChange,
     handleCLISettingChange,
@@ -630,6 +737,7 @@ export function useAgentSettings({
     addRuntimeProject,
     selectRuntimeProject,
     renameRuntimeSession,
+    loadRuntimeSessionHistory,
     loadRuntimeSettings,
     refreshRuntimeCatalog,
     checkRuntimeConnections,
