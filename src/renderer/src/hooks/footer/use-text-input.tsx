@@ -1,4 +1,4 @@
-import { ChangeEvent, KeyboardEvent, useState } from 'react';
+import { ChangeEvent, ClipboardEvent, KeyboardEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useWebSocket } from '@/context/websocket-context';
 import { useAiState } from '@/context/ai-state-context';
@@ -77,6 +77,19 @@ export function useTextInput() {
   const handleCompositionStart = () => setIsComposing(true);
   const handleCompositionEnd = () => setIsComposing(false);
 
+  const handlePaste = async (
+    e: ClipboardEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
+    const files = Array.from(e.clipboardData?.items || [])
+      .filter((item) => item.kind === 'file' && item.type.startsWith('image/'))
+      .map((item) => item.getAsFile())
+      .filter((file): file is File => file !== null);
+    if (!files.length) return;
+    // Keep the pasted image out of the text field and add it as an attachment.
+    e.preventDefault();
+    await addFiles(files);
+  };
+
   return {
     inputText,
     setInputText: handleInputChange,
@@ -85,6 +98,7 @@ export function useTextInput() {
     handleKeyPress,
     handleCompositionStart,
     handleCompositionEnd,
+    handlePaste,
     attachments,
     addFiles,
     removeAttachment,

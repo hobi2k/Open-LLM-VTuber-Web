@@ -42,6 +42,7 @@ interface MessageInputProps {
   onKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void
   onCompositionStart: () => void
   onCompositionEnd: () => void
+  onPaste: (e: React.ClipboardEvent<HTMLTextAreaElement>) => void
   setValue: (value: string) => void
   attachments: ImageAttachment[]
   addFiles: (files: FileList | File[]) => Promise<void>
@@ -110,6 +111,7 @@ const MessageInput = memo(({
   onKeyDown,
   onCompositionStart,
   onCompositionEnd,
+  onPaste,
   setValue,
   attachments,
   addFiles,
@@ -171,6 +173,7 @@ const MessageInput = memo(({
           }}
           onCompositionStart={onCompositionStart}
           onCompositionEnd={onCompositionEnd}
+          onPaste={onPaste}
           placeholder={t('footer.typeYourMessage')}
           {...footerStyles.footer.input}
           paddingTop={attachments.length ? '34px' : '20px'}
@@ -191,6 +194,7 @@ function Footer({ isCollapsed = false, onToggle }: FooterProps): JSX.Element {
     handleKeyPress,
     handleCompositionStart,
     handleCompositionEnd,
+    handlePaste,
     handleInterrupt,
     handleMicToggle,
     micOn,
@@ -223,6 +227,7 @@ function Footer({ isCollapsed = false, onToggle }: FooterProps): JSX.Element {
             onKeyDown={handleKeyPress}
             onCompositionStart={handleCompositionStart}
             onCompositionEnd={handleCompositionEnd}
+            onPaste={handlePaste}
             attachments={attachments}
             addFiles={addFiles}
             removeAttachment={removeAttachment}

@@ -40,6 +40,7 @@ export function InputSubtitle() {
     handleKeyPress,
     handleCompositionStart,
     handleCompositionEnd,
+    handlePaste,
     handleInterrupt,
     handleMicToggle,
     handleSend,
@@ -173,6 +174,7 @@ export function InputSubtitle() {
           }}
           onCompositionStart={handleCompositionStart}
           onCompositionEnd={handleCompositionEnd}
+          onPaste={handlePaste}
           placeholder={t('footer.typeYourMessage')}
           aria-label={t('footer.typeYourMessage')}
           rows={1}
