@@ -161,6 +161,10 @@ class WebSocketService {
 
   private currentState: 'CONNECTING' | 'OPEN' | 'CLOSING' | 'CLOSED' = 'CLOSED';
 
+  private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+
+  private static readonly HEARTBEAT_INTERVAL_MS = 15000;
+
   static getInstance() {
     if (!WebSocketService.instance) {
       WebSocketService.instance = new WebSocketService();
@@ -197,12 +201,15 @@ class WebSocketService {
       this.ws.onopen = () => {
         this.currentState = 'OPEN';
         this.stateSubject.next('OPEN');
+        this.startHeartbeat();
         this.initializeConnection();
       };
 
       this.ws.onmessage = (event) => {
         try {
           const message = JSON.parse(event.data);
+          // The heartbeat only keeps the socket alive; it is not a chat event.
+          if (message?.type === 'heartbeat-ack') return;
           this.messageSubject.next(message);
         } catch (error) {
           console.error('Failed to parse WebSocket message:', error);
@@ -215,18 +222,37 @@ class WebSocketService {
       };
 
       this.ws.onclose = () => {
+        this.stopHeartbeat();
         this.currentState = 'CLOSED';
         this.stateSubject.next('CLOSED');
       };
 
       this.ws.onerror = () => {
+        this.stopHeartbeat();
         this.currentState = 'CLOSED';
         this.stateSubject.next('CLOSED');
       };
     } catch (error) {
       console.error('Failed to connect to WebSocket:', error);
+      this.stopHeartbeat();
       this.currentState = 'CLOSED';
       this.stateSubject.next('CLOSED');
+    }
+  }
+
+  private startHeartbeat() {
+    this.stopHeartbeat();
+    this.heartbeatTimer = setInterval(() => {
+      if (this.ws?.readyState === WebSocket.OPEN) {
+        this.ws.send(JSON.stringify({ type: 'heartbeat' }));
+      }
+    }, WebSocketService.HEARTBEAT_INTERVAL_MS);
+  }
+
+  private stopHeartbeat() {
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+      this.heartbeatTimer = null;
     }
   }
 
@@ -253,6 +279,7 @@ class WebSocketService {
   }
 
   disconnect() {
+    this.stopHeartbeat();
     this.ws?.close();
     this.ws = null;
   }
