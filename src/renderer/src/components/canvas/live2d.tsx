@@ -54,7 +54,9 @@ export const Live2D = memo(
         window.api?.updatePetInteractiveRegion?.('live2d-model', null);
         return;
       }
-      const padding = 96;
+      // A tight region keeps the desktop clickable right next to the character.
+      // Fast drags stay captured via the full-window 'live2d-drag' region below.
+      const padding = 40;
       window.api?.updatePetInteractiveRegion?.('live2d-model', {
         x: anchor.left - padding,
         y: anchor.y - padding,
@@ -63,8 +65,28 @@ export const Live2D = memo(
       });
     }, [anchor.bottom, anchor.left, anchor.ready, anchor.right, anchor.y, isPet]);
 
+    // While the model is being dragged, hold the whole pet window interactive so
+    // moving the cursor fast (even off the model) never drops the drag or leaks
+    // the click to the desktop underneath.
+    useEffect(() => {
+      if (!isPet || !isDragging) {
+        window.api?.updatePetInteractiveRegion?.('live2d-drag', null);
+        return undefined;
+      }
+      window.api?.updatePetInteractiveRegion?.('live2d-drag', {
+        x: 0,
+        y: 0,
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+      return () => {
+        window.api?.updatePetInteractiveRegion?.('live2d-drag', null);
+      };
+    }, [isPet, isDragging]);
+
     useEffect(() => () => {
       window.api?.updatePetInteractiveRegion?.('live2d-model', null);
+      window.api?.updatePetInteractiveRegion?.('live2d-drag', null);
     }, []);
 
     // Reset expression to default when AI state becomes idle

@@ -12,7 +12,8 @@ import { useMode } from '@/context/mode-context';
 const MIN_SCALE = 0.1;
 const MAX_SCALE = 5.0;
 const EASING_FACTOR = 0.3; // Controls animation smoothness
-const WHEEL_SCALE_STEP = 0.03; // Scale change per wheel tick
+const WHEEL_SCALE_STEP = 0.08; // Scale change per wheel tick
+const SCALE_SNAP_EPSILON = 0.001; // Stop easing once this close to the target
 const DEFAULT_SCALE = 1.0; // Default scale if not specified
 
 interface UseLive2DResizeProps {
@@ -103,6 +104,16 @@ export const useLive2DResize = ({
     const currentScale = lastScaleRef.current;
     const diff = clampedTargetScale - currentScale;
 
+    // Snap to the target and stop the loop once it is effectively reached so the
+    // animation frame does not run forever after a single scroll.
+    if (Math.abs(diff) < SCALE_SNAP_EPSILON) {
+      applyScale(clampedTargetScale);
+      lastScaleRef.current = clampedTargetScale;
+      isAnimatingRef.current = false;
+      animationFrameRef.current = undefined;
+      return;
+    }
+
     const newScale = currentScale + diff * EASING_FACTOR;
     applyScale(newScale);
     lastScaleRef.current = newScale;
@@ -117,6 +128,12 @@ export const useLive2DResize = ({
   const handleWheel = useCallback((e: WheelEvent) => {
     e.preventDefault();
     if (!modelInfo?.scrollToResize) return;
+
+    // In pet mode the window turns click-through when the cursor leaves the
+    // model region; scrolling to zoom must keep it interactive.
+    if (isPet) {
+      (window.api as any)?.updateComponentHover?.('live2d-model', true);
+    }
 
     const direction = e.deltaY > 0 ? -1 : 1;
     const increment = WHEEL_SCALE_STEP * direction;
@@ -133,7 +150,7 @@ export const useLive2DResize = ({
       isAnimatingRef.current = true;
       animationFrameRef.current = requestAnimationFrame(animateEase);
     }
-  }, [modelInfo?.scrollToResize, animateEase]);
+  }, [modelInfo?.scrollToResize, isPet, animateEase]);
 
   /**
    * Pre-process container resize

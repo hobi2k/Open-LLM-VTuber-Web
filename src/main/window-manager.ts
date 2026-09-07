@@ -12,7 +12,9 @@ import {
 
 const isMac = process.platform === 'darwin';
 const PET_CURSOR_POLL_INTERVAL_MS = 16;
-const PET_INTERACTION_EXIT_GRACE_MS = 750;
+// Shorter grace so clicks land on the desktop right after the cursor leaves the
+// character; an active drag keeps the window interactive via its own region.
+const PET_INTERACTION_EXIT_GRACE_MS = 250;
 
 function isSafeBrowserUrl(value: string): boolean {
   try {
