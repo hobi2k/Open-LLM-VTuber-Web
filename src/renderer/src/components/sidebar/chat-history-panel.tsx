@@ -514,6 +514,7 @@ function ChatHistoryPanel(): JSX.Element {
   const { confName } = useConfig();
   const { baseUrl } = useWebSocket();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const prevCountRef = useRef(0);
   const validMessages = useMemo(
     () => messages.filter(
       (message) => Boolean(message.content) ||
@@ -526,10 +527,18 @@ function ChatHistoryPanel(): JSX.Element {
   );
 
   useEffect(() => {
+    // Loading a whole session at once (or the first render) must land on the
+    // latest message instantly. Only single-message growth during streaming
+    // gets the smooth scroll.
+    const previousCount = prevCountRef.current;
+    const grewByOne = validMessages.length === previousCount + 1;
+    const behavior: ScrollBehavior = grewByOne ? "smooth" : "auto";
+    prevCountRef.current = validMessages.length;
+
     const frame = requestAnimationFrame(() => {
       scrollRef.current?.scrollTo({
         top: scrollRef.current.scrollHeight,
-        behavior: "smooth",
+        behavior,
       });
     });
     return () => cancelAnimationFrame(frame);
