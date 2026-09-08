@@ -104,7 +104,7 @@ export function Live2DSpeechBubble(): JSX.Element | null {
   const [submitting, setSubmitting] = useState(false);
 
   const bubble = useMemo<BubbleContent | null>(() => {
-    const latest = latestPetDisplayMessage(messages);
+    const latest = latestPetDisplayMessage(messages, isThinkingSpeaking);
     if (!latest) {
       const turn = currentPetTurn(messages);
       if (!turn.length || !isThinkingSpeaking) return null;

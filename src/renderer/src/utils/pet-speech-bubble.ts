@@ -48,7 +48,10 @@ export function currentPetTurn(messages: Message[]): Message[] {
   return messages.slice(latestHumanIndex);
 }
 
-export function latestPetDisplayMessage(messages: Message[]): Message | undefined {
+export function latestPetDisplayMessage(
+  messages: Message[],
+  thinking = false,
+): Message | undefined {
   const displayMessages = currentPetTurn(messages).filter((message) => (
     message.role === 'ai' && (
       message.type === 'reasoning'
@@ -57,18 +60,34 @@ export function latestPetDisplayMessage(messages: Message[]): Message | undefine
       || (message.type === 'text' && Boolean(message.content.trim()))
     )
   ));
-  const finalResponse = [...displayMessages]
-    .reverse()
-    .find((message) => message.type === 'text' && Boolean(message.content.trim()));
-  if (finalResponse) return finalResponse;
+  if (!displayMessages.length) return undefined;
 
-  return displayMessages
+  // A permission request still awaiting the user must always surface — it
+  // blocks the turn and needs an Allow/Deny decision, so it outranks anything
+  // else (otherwise reasoning or an earlier text answer hides it).
+  const pendingPermission = [...displayMessages]
+    .reverse()
+    .find((message) => message.type === 'permission' && message.status === 'running');
+  if (pendingPermission) return pendingPermission;
+
+  const newest = [...displayMessages]
     .map((message, index) => ({ message, index }))
     .sort((left, right) => (
       new Date(right.message.timestamp).getTime()
       - new Date(left.message.timestamp).getTime()
       || right.index - left.index
-    ))[0]?.message;
+    ))[0].message;
+
+  // While the turn is still active, show the latest live event (streaming
+  // reasoning, tool activity, or the answer as it arrives). Only once the turn
+  // settles do we prefer the final text answer, so a late reasoning-completion
+  // update cannot mask the response.
+  if (thinking) return newest;
+
+  const finalResponse = [...displayMessages]
+    .reverse()
+    .find((message) => message.type === 'text' && Boolean(message.content.trim()));
+  return finalResponse ?? newest;
 }
 
 export function petSpeechBubblePosition(input: PositionInput): PetSpeechBubblePosition {

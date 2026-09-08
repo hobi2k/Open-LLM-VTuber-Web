@@ -25,6 +25,41 @@ describe('pet speech bubble', () => {
     expect(latestPetDisplayMessage(messages)?.id).toBe('answer');
   });
 
+  it('surfaces a pending permission request over reasoning and earlier text', () => {
+    const messages = [
+      message({ id: 'human', type: 'text', role: 'human', content: 'Run it' }),
+      message({ id: 'answer', type: 'text', content: 'Let me check.', timestamp: '2026-09-02T00:00:01.000Z' }),
+      message({ id: 'reasoning', type: 'reasoning', content: 'Thinking', status: 'running', timestamp: '2026-09-02T00:00:03.000Z' }),
+      message({ id: 'perm', type: 'permission', status: 'running', title: 'Run bash', timestamp: '2026-09-02T00:00:02.000Z' }),
+    ];
+
+    // Even though reasoning has the newest timestamp, the pending permission wins.
+    expect(latestPetDisplayMessage(messages, true)?.id).toBe('perm');
+  });
+
+  it('shows live reasoning while the turn is still thinking', () => {
+    const messages = [
+      message({ id: 'human', type: 'text', role: 'human', content: 'Explain' }),
+      message({ id: 'early', type: 'text', content: 'Starting', timestamp: '2026-09-02T00:00:01.000Z' }),
+      message({ id: 'reasoning', type: 'reasoning', content: 'Reasoning now', status: 'running', timestamp: '2026-09-02T00:00:04.000Z' }),
+    ];
+
+    // While thinking, the streaming reasoning is shown, not the earlier text.
+    expect(latestPetDisplayMessage(messages, true)?.id).toBe('reasoning');
+    // Once settled, the final text answer is preferred again.
+    expect(latestPetDisplayMessage(messages, false)?.id).toBe('early');
+  });
+
+  it('does not force a resolved permission over the final answer', () => {
+    const messages = [
+      message({ id: 'human', type: 'text', role: 'human', content: 'Go' }),
+      message({ id: 'perm', type: 'permission', status: 'completed', title: 'Run bash', timestamp: '2026-09-02T00:00:01.000Z' }),
+      message({ id: 'answer', type: 'text', content: 'Finished', timestamp: '2026-09-02T00:00:02.000Z' }),
+    ];
+
+    expect(latestPetDisplayMessage(messages, false)?.id).toBe('answer');
+  });
+
   it('places a bubble beside the model when the requested side has room', () => {
     const position = petSpeechBubblePosition({
       placement: 'right',
